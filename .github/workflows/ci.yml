@@ -16,28 +16,20 @@ jobs:
       - name: Setup micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          environment-name: ci
+          environment-file: environment.yml
           init-shell: bash
           cache-environment: true
           cache-downloads: true
-          create-args: >-
-            -c conda-forge
-            geant4
-            cmake
-            ninja
-            expat
-            zlib
-            cxx-compiler
 
       - name: Toolchain info
         run: |
-          micromamba run -n ci cmake --version
-          micromamba run -n ci ninja --version
-          micromamba run -n ci geant4-config --version
+          micromamba run -n geant4-sourceLab cmake --version
+          micromamba run -n geant4-sourceLab ninja --version
+          micromamba run -n geant4-sourceLab geant4-config --version
 
       - name: Configure
         run: |
-          micromamba run -n ci bash -lc '
+          micromamba run -n geant4-sourceLab bash -lc '
             cmake -S . -B build-ci -G Ninja \
               -DEXPAT_INCLUDE_DIR="$CONDA_PREFIX/include" \
               -DEXPAT_LIBRARY="$CONDA_PREFIX/lib/libexpat.so" \
@@ -45,8 +37,8 @@ jobs:
               -DZLIB_LIBRARY="$CONDA_PREFIX/lib/libz.so"'
 
       - name: Build
-        run: micromamba run -n ci cmake --build build-ci --parallel
+        run: micromamba run -n geant4-sourceLab cmake --build build-ci --parallel
 
       - name: Smoke test (batch macro)
         working-directory: build-ci
-        run: micromamba run -n ci ./sourceLab -b run.mac
+        run: micromamba run -n geant4-sourceLab ./sourceLab -b run.mac
