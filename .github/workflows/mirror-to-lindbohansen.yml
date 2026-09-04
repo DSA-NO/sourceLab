@@ -18,9 +18,14 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Clone source repository as a bare mirror
         run: |
-          git clone --bare "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" source-mirror.git
+          git clone --bare . source-mirror.git
 
       - name: Mirror to lindbohansen/sourceLab
         env:
