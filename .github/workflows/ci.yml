@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build (Geant4)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup micromamba environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: ci
+          init-shell: bash
+          cache-environment: true
+          cache-downloads: true
+          create-args: >-
+            -c conda-forge
+            geant4
+            cmake
+            ninja
+            cxx-compiler
+
+      - name: Toolchain info
+        run: |
+          micromamba run -n ci cmake --version
+          micromamba run -n ci ninja --version
+          micromamba run -n ci geant4-config --version
+
+      - name: Configure
+        run: micromamba run -n ci bash -lc 'cmake -S . -B build-ci -G Ninja'
+
+      - name: Build
+        run: micromamba run -n ci cmake --build build-ci --parallel
+
+      - name: Smoke test (batch macro)
+        working-directory: build-ci
+        run: micromamba run -n ci ./sourceLab -b run.mac
