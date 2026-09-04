@@ -1,8 +1,8 @@
 #ifndef SourceLabPrimaryGeneratorAction_h
 #define SourceLabPrimaryGeneratorAction_h 1
 
+#include "G4GeneralParticleSource.hh"
 #include "G4VUserPrimaryGeneratorAction.hh"
-#include "G4ParticleGun.hh"
 
 namespace SourceLab
 {
@@ -18,7 +18,7 @@ class SourceLabPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
 
   private:
     SourceLabDetectorConstruction* fDetectorConstruction = nullptr;
-    G4ParticleGun* fParticleGun = nullptr;
+    G4GeneralParticleSource* fParticleSource = nullptr;
 };
 
 }  // namespace SourceLab

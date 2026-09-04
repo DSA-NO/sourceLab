@@ -3,8 +3,8 @@
 #include "SourceLabDetectorConstruction.hh"
 
 #include "G4ParticleDefinition.hh"
-#include "G4ParticleGun.hh"
 #include "G4ParticleTable.hh"
+#include "G4SingleParticleSource.hh"
 #include "G4SystemOfUnits.hh"
 
 namespace SourceLab
@@ -14,24 +14,32 @@ SourceLabPrimaryGeneratorAction::SourceLabPrimaryGeneratorAction(
   SourceLabDetectorConstruction* detectorConstruction)
 : fDetectorConstruction(detectorConstruction)
 {
-  fParticleGun = new G4ParticleGun(1);
+  fParticleSource = new G4GeneralParticleSource();
+
+  auto* source = fParticleSource->GetCurrentSource();
+  source->GetPosDist()->SetPosDisType("Point");
+  source->GetPosDist()->SetCentreCoords(G4ThreeVector(0., 0., -0.75 * m));
+
+  source->GetAngDist()->SetAngDistType("iso");
+  source->GetAngDist()->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
+
+  source->GetEneDist()->SetEnergyDisType("Mono");
+  source->GetEneDist()->SetMonoEnergy(1.25 * MeV);
+
   auto* particle = G4ParticleTable::GetParticleTable()->FindParticle("gamma");
   if (particle) {
-    fParticleGun->SetParticleDefinition(particle);
-    fParticleGun->SetParticleEnergy(1.25 * MeV);
-    fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
-    fParticleGun->SetParticlePosition(G4ThreeVector(0., 0., -0.75 * m));
+    source->SetParticleDefinition(particle);
   }
 }
 
 SourceLabPrimaryGeneratorAction::~SourceLabPrimaryGeneratorAction()
 {
-  delete fParticleGun;
+  delete fParticleSource;
 }
 
 void SourceLabPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-  if (!fParticleGun) {
+  if (!fParticleSource) {
     return;
   }
 
@@ -39,14 +47,17 @@ void SourceLabPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     const auto config = fDetectorConstruction->GetConfig();
     auto* particle = G4ParticleTable::GetParticleTable()->FindParticle(config.sourceParticle);
     if (particle) {
-      fParticleGun->SetParticleDefinition(particle);
+      fParticleSource->GetCurrentSource()->SetParticleDefinition(particle);
     }
-    fParticleGun->SetParticleEnergy(config.sourceEnergy);
-    fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
-    fParticleGun->SetParticlePosition(G4ThreeVector(0., 0., -0.75 * m));
+    fParticleSource->GetCurrentSource()->GetEneDist()->SetEnergyDisType("Mono");
+    fParticleSource->GetCurrentSource()->GetEneDist()->SetMonoEnergy(config.sourceEnergy);
+    fParticleSource->GetCurrentSource()->GetPosDist()->SetPosDisType("Point");
+    fParticleSource->GetCurrentSource()->GetPosDist()->SetCentreCoords(G4ThreeVector(0., 0., -0.75 * m));
+    fParticleSource->GetCurrentSource()->GetAngDist()->SetAngDistType("iso");
+    fParticleSource->GetCurrentSource()->GetAngDist()->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
   }
 
-  fParticleGun->GeneratePrimaryVertex(anEvent);
+  fParticleSource->GeneratePrimaryVertex(anEvent);
 }
 
 }  // namespace SourceLab
