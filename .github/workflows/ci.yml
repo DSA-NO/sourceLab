@@ -16,9 +16,11 @@ jobs:
       - name: Setup micromamba environment
         uses: mamba-org/setup-micromamba@v3
         with:
+          environment-name: geant4-sourceLab
           environment-file: environment.yml
           init-shell: bash
           cache-environment: true
+          cache-environment-key: geant4-sourceLab-${{ hashFiles('environment.yml') }}
           cache-downloads: true
 
       - name: Toolchain info
