@@ -4,7 +4,15 @@ This project is a Geant4 application focused on simulating radioactive and sourc
 
 ## Quick start
 
-Use the shipped micromamba helper for the recommended workflow:
+If micromamba is missing or stale, refresh it first. These helper scripts are intended for Linux/macOS shells; on Windows, use WSL, Git Bash, or another Unix-like shell and follow the same steps.
+
+```bash
+cd sourceLab
+./scripts/install-micromamba.sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then use the shipped micromamba helper for the recommended workflow:
 
 ```bash
 cd sourceLab
