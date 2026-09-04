@@ -25,6 +25,7 @@ jobs:
             geant4
             cmake
             ninja
+            expat
             cxx-compiler
 
       - name: Toolchain info
@@ -34,7 +35,11 @@ jobs:
           micromamba run -n ci geant4-config --version
 
       - name: Configure
-        run: micromamba run -n ci bash -lc 'cmake -S . -B build-ci -G Ninja'
+        run: |
+          micromamba run -n ci bash -lc '
+            cmake -S . -B build-ci -G Ninja \
+              -DEXPAT_INCLUDE_DIR="$CONDA_PREFIX/include" \
+              -DEXPAT_LIBRARY="$CONDA_PREFIX/lib/libexpat.so"'
 
       - name: Build
         run: micromamba run -n ci cmake --build build-ci --parallel
