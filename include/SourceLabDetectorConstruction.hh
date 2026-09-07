@@ -20,8 +20,6 @@ struct DetectorConfig
   G4double sampleDepth = 10.0 * cm;
   G4double sampleRadius = 5.0 * cm;
   G4double sampleThickness = 1.0 * mm;
-  G4double sourceEnergy = 1.25 * MeV;
-  G4String sourceParticle = "gamma";
 };
 
 class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
@@ -40,15 +38,11 @@ class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
     void SetPhantomHalfSize(G4double x, G4double y, G4double z);
     void SetSampleDepth(G4double depth);
     void SetSampleSize(G4double radius, G4double thickness);
-    void SetSourceEnergy(G4double energy);
-    void SetSourceParticle(const G4String& particleName);
 
     G4double GetWorldSize() const;
     G4double GetSampleDepth() const;
     G4double GetSampleRadius() const;
     G4double GetSampleThickness() const;
-    G4String GetSourceParticle() const;
-    G4double GetSourceEnergy() const;
     void PrintConfig() const;
 
   private:

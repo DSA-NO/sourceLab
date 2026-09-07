@@ -89,20 +89,6 @@ void SourceLabDetectorConstruction::SetSampleSize(G4double radius, G4double thic
   }
 }
 
-void SourceLabDetectorConstruction::SetSourceEnergy(G4double energy)
-{
-  if (energy > 0.) {
-    fConfig.sourceEnergy = energy;
-  }
-}
-
-void SourceLabDetectorConstruction::SetSourceParticle(const G4String& particleName)
-{
-  if (!particleName.empty()) {
-    fConfig.sourceParticle = particleName;
-  }
-}
-
 G4double SourceLabDetectorConstruction::GetWorldSize() const
 {
   return fConfig.worldSize;
@@ -123,16 +109,6 @@ G4double SourceLabDetectorConstruction::GetSampleThickness() const
   return fConfig.sampleThickness;
 }
 
-G4String SourceLabDetectorConstruction::GetSourceParticle() const
-{
-  return fConfig.sourceParticle;
-}
-
-G4double SourceLabDetectorConstruction::GetSourceEnergy() const
-{
-  return fConfig.sourceEnergy;
-}
-
 void SourceLabDetectorConstruction::PrintConfig() const
 {
   G4cout << "SourceLab detector configuration:" << G4endl;
@@ -142,8 +118,6 @@ void SourceLabDetectorConstruction::PrintConfig() const
   G4cout << "  sampleDepth = " << fConfig.sampleDepth / cm << " cm" << G4endl;
   G4cout << "  sampleRadius = " << fConfig.sampleRadius / cm << " cm" << G4endl;
   G4cout << "  sampleThickness = " << fConfig.sampleThickness / mm << " mm" << G4endl;
-  G4cout << "  sourceEnergy = " << fConfig.sourceEnergy / MeV << " MeV" << G4endl;
-  G4cout << "  sourceParticle = " << fConfig.sourceParticle << G4endl;
 }
 
 G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()

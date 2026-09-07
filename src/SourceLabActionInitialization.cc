@@ -21,7 +21,7 @@ void SourceLabActionInitialization::BuildForMaster() const
 
 void SourceLabActionInitialization::Build() const
 {
-  SetUserAction(new SourceLabPrimaryGeneratorAction(fDetectorConstruction));
+  SetUserAction(new SourceLabPrimaryGeneratorAction());
   auto* eventAction = new SourceLabEventAction;
   SetUserAction(eventAction);
   SetUserAction(new SourceLabRunAction(fDetectorConstruction));
