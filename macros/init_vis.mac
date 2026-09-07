@@ -2,6 +2,7 @@
 /tracking/verbose 0
 /run/verbose 0
 /event/verbose 0
+/run/initialize
 /vis/open OGL
 /vis/viewer/flush
 /vis/drawVolume

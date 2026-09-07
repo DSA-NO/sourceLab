@@ -7,6 +7,9 @@
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
 
+#include <array>
+#include <fstream>
+
 namespace
 {
 void PrintUsage()
@@ -17,6 +20,33 @@ void PrintUsage()
   G4cout << "   -v macro  : visualize, execute the macro, and keep the UI open" << G4endl;
   G4cout << "   -t N      : number of threads for multi-threaded builds" << G4endl;
   G4cout << "   (no args) : interactive session" << G4endl;
+}
+
+bool FileExists(const G4String& path)
+{
+  std::ifstream f(path);
+  return f.good();
+}
+
+bool ExecuteMacroWithFallback(G4UImanager* uiManager, const G4String& macro)
+{
+  const std::array<G4String, 3> candidates = {
+    macro,
+    "macros/" + macro,
+    "build/" + macro,
+  };
+
+  for (const auto& candidate : candidates) {
+    if (!FileExists(candidate)) {
+      continue;
+    }
+    uiManager->ApplyCommand("/control/execute " + candidate);
+    return true;
+  }
+
+  G4cerr << "Error: could not locate macro '" << macro
+         << "' in current directory, macros/, or build/." << G4endl;
+  return false;
 }
 }  // namespace
 
@@ -89,21 +119,50 @@ int main(int argc, char** argv)
   auto* UImanager = G4UImanager::GetUIpointer();
 
   if (!macro.empty()) {
-    UImanager->ApplyCommand("/control/execute " + macro);
+    if (!ExecuteMacroWithFallback(UImanager, macro)) {
+      delete visManager;
+      delete runManager;
+      return 1;
+    }
   }
   else if (!visMacro.empty()) {
-    UImanager->ApplyCommand("/control/execute init_vis.mac");
-    if (ui && ui->IsGUI()) {
-      UImanager->ApplyCommand("/control/execute gui.mac");
+    if (!ExecuteMacroWithFallback(UImanager, "init_vis.mac")) {
+      delete ui;
+      delete visManager;
+      delete runManager;
+      return 1;
     }
-    UImanager->ApplyCommand("/control/execute " + visMacro);
+    if (ui && ui->IsGUI()) {
+      if (!ExecuteMacroWithFallback(UImanager, "gui.mac")) {
+        delete ui;
+        delete visManager;
+        delete runManager;
+        return 1;
+      }
+    }
+    if (!ExecuteMacroWithFallback(UImanager, visMacro)) {
+      delete ui;
+      delete visManager;
+      delete runManager;
+      return 1;
+    }
     ui->SessionStart();
     delete ui;
   }
   else {
-    UImanager->ApplyCommand("/control/execute init_vis.mac");
+    if (!ExecuteMacroWithFallback(UImanager, "init_vis.mac")) {
+      delete ui;
+      delete visManager;
+      delete runManager;
+      return 1;
+    }
     if (ui && ui->IsGUI()) {
-      UImanager->ApplyCommand("/control/execute gui.mac");
+      if (!ExecuteMacroWithFallback(UImanager, "gui.mac")) {
+        delete ui;
+        delete visManager;
+        delete runManager;
+        return 1;
+      }
     }
     ui->SessionStart();
     delete ui;

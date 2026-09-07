@@ -45,6 +45,12 @@ You can also pass a macro directly:
 ./scripts/run-micromamba.sh run -b run.mac
 ```
 
+For a quick visualization run:
+
+```bash
+./scripts/run-micromamba.sh run -v init_vis.mac
+```
+
 ## AI Usage
 
 AI-assisted development is used in this project.

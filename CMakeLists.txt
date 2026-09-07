@@ -15,6 +15,7 @@ target_include_directories(sourceLab PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(sourceLab PRIVATE ${Geant4_LIBRARIES})
 
 set(SOURCE_LAB_MACROS
+  gui.mac
   init_vis.mac
   run.mac
 )
