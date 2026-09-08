@@ -59,6 +59,12 @@ Use `-p option4|livermore|penelope` to select the EM sub-model. For example:
 ./scripts/run-micromamba.sh run -p livermore -b run.mac
 ```
 
+Use `-r on|off` to enable or disable radioactive decay physics. For example:
+
+```bash
+./scripts/run-micromamba.sh run -r on -b run.mac
+```
+
 ## AI Usage
 
 AI-assisted development is used in this project.
