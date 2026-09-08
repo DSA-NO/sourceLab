@@ -4,18 +4,28 @@
 
 #include "G4AccumulableManager.hh"
 #include "G4AnalysisManager.hh"
+#include "G4Exception.hh"
+#include "G4GenericMessenger.hh"
 #include "G4Run.hh"
 #include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Threading.hh"
 #include "G4UnitsTable.hh"
 
+#include <cctype>
+
 namespace SourceLab
 {
 
-SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorConstruction)
+SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorConstruction,
+  const G4String& emModel,
+  G4bool enableRadioactiveDecay)
 : fDetectorConstruction(detectorConstruction)
+, fEmModel(emModel)
+, fEnableRadioactiveDecay(enableRadioactiveDecay)
 {
+  ConfigureCommands();
+
   auto* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Register(fRunDose);
   accumulableManager->Register(fRunEnergyDeposit);
@@ -40,6 +50,105 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->CreateNtupleDColumn("TrackL");
   analysisManager->CreateNtupleIColumn("ThreadId");
   analysisManager->FinishNtuple(fRunNtupleId);
+
+  fRunInfoNtupleId = analysisManager->CreateNtuple("runinfo", "Run metadata for scenario provenance");
+  analysisManager->CreateNtupleSColumn("Tag");
+  analysisManager->CreateNtupleSColumn("Source");
+  analysisManager->CreateNtupleSColumn("Geometry");
+  analysisManager->CreateNtupleSColumn("Region");
+  analysisManager->CreateNtupleDColumn("DepthCm");
+  analysisManager->CreateNtupleSColumn("EMModel");
+  analysisManager->CreateNtupleSColumn("RadioactiveDecay");
+  analysisManager->CreateNtupleIColumn("Events");
+  analysisManager->CreateNtupleIColumn("ThreadId");
+  analysisManager->FinishNtuple(fRunInfoNtupleId);
+}
+
+void SourceLabRunAction::ConfigureCommands()
+{
+  fMessenger = std::make_unique<G4GenericMessenger>(this, "/sourceLab/output/", "Output metadata control");
+
+  auto& tagCmd = fMessenger->DeclareMethod("tag", &SourceLabRunAction::SetOutputTag,
+                                           "Set scenario tag used in output file naming.");
+  tagCmd.SetGuidance("Set scenario tag used in output file naming.");
+  tagCmd.SetGuidance("Allowed characters: letters, digits, '-' and '_'.");
+  tagCmd.SetParameterName("tag", false);
+  tagCmd.SetStates(G4State_PreInit, G4State_Idle);
+
+  auto& sourceCmd = fMessenger->DeclareProperty("source", fOutputSource);
+  sourceCmd.SetGuidance("Set source metadata string stored in runinfo ntuple.");
+  sourceCmd.SetParameterName("source", false);
+  sourceCmd.SetStates(G4State_PreInit, G4State_Idle);
+
+  auto& geometryCmd = fMessenger->DeclareProperty("geometry", fOutputGeometry);
+  geometryCmd.SetGuidance("Set geometry metadata string stored in runinfo ntuple.");
+  geometryCmd.SetParameterName("geometry", false);
+  geometryCmd.SetStates(G4State_PreInit, G4State_Idle);
+
+  auto& regionCmd = fMessenger->DeclareProperty("region", fOutputRegion);
+  regionCmd.SetGuidance("Set scoring-region metadata string stored in runinfo ntuple.");
+  regionCmd.SetParameterName("region", false);
+  regionCmd.SetStates(G4State_PreInit, G4State_Idle);
+
+  auto& depthCmd = fMessenger->DeclareMethodWithUnit(
+    "depth", "cm", &SourceLabRunAction::SetOutputDepth, "Set depth metadata stored in runinfo ntuple.");
+  depthCmd.SetGuidance("Set depth metadata stored in runinfo ntuple.");
+  depthCmd.SetParameterName("depth", false);
+  depthCmd.SetRange("depth>=0.");
+  depthCmd.SetStates(G4State_PreInit, G4State_Idle);
+}
+
+void SourceLabRunAction::SetOutputTag(const G4String& tag)
+{
+  if (tag.empty()) {
+    G4ExceptionDescription msg;
+    msg << "Invalid output tag '" << tag << "'. Tag must not be empty.";
+    G4Exception("SourceLabRunAction::SetOutputTag", "SourceLabOutput001", FatalException, msg);
+    return;
+  }
+
+  for (auto ch : tag) {
+    const auto uch = static_cast<unsigned char>(ch);
+    if (!std::isalnum(uch) && ch != '-' && ch != '_') {
+      G4ExceptionDescription msg;
+      msg << "Invalid output tag '" << tag
+          << "'. Allowed characters are letters, digits, '-' and '_' only.";
+      G4Exception("SourceLabRunAction::SetOutputTag", "SourceLabOutput002", FatalException, msg);
+      return;
+    }
+  }
+
+  fOutputTag = tag;
+}
+
+void SourceLabRunAction::SetOutputDepth(G4double depth)
+{
+  fOutputDepthCm = depth / cm;
+}
+
+G4String SourceLabRunAction::SanitizeForFileName(const G4String& value)
+{
+  G4String out;
+  out.reserve(value.size());
+  for (auto ch : value) {
+    const auto uch = static_cast<unsigned char>(ch);
+    if (std::isalnum(uch) || ch == '-' || ch == '_') {
+      out.push_back(ch);
+    }
+    else {
+      out.push_back('_');
+    }
+  }
+  return out;
+}
+
+G4String SourceLabRunAction::BuildOutputFileName() const
+{
+  const auto tag = SanitizeForFileName(fOutputTag);
+  if (tag.empty()) {
+    return "sourceLab-default.root";
+  }
+  return "sourceLab-" + tag + ".root";
 }
 
 void SourceLabRunAction::BeginOfRunAction(const G4Run*)
@@ -49,7 +158,10 @@ void SourceLabRunAction::BeginOfRunAction(const G4Run*)
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->Reset();
-  analysisManager->OpenFile("sourceLab.root");
+  if (fOutputDepthCm < 0. && fDetectorConstruction) {
+    fOutputDepthCm = fDetectorConstruction->GetSampleDepth() / cm;
+  }
+  analysisManager->OpenFile(BuildOutputFileName());
 
   if (isMaster) {
     G4cout << "Starting run." << G4endl;
@@ -74,6 +186,18 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     analysisManager->FillNtupleDColumn(fRunNtupleId, 3, GetRunTrackLength());
     analysisManager->FillNtupleIColumn(fRunNtupleId, 4, G4Threading::G4GetThreadId());
     analysisManager->AddNtupleRow(fRunNtupleId);
+  }
+  if (writeRunRow && fRunInfoNtupleId >= 0) {
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 0, SanitizeForFileName(fOutputTag));
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 1, fOutputSource);
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 2, fOutputGeometry);
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 3, fOutputRegion);
+    analysisManager->FillNtupleDColumn(fRunInfoNtupleId, 4, fOutputDepthCm);
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 5, fEmModel);
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 6, fEnableRadioactiveDecay ? "on" : "off");
+    analysisManager->FillNtupleIColumn(fRunInfoNtupleId, 7, run->GetNumberOfEvent());
+    analysisManager->FillNtupleIColumn(fRunInfoNtupleId, 8, G4Threading::G4GetThreadId());
+    analysisManager->AddNtupleRow(fRunInfoNtupleId);
   }
   analysisManager->Write();
   analysisManager->CloseFile(false);

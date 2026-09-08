@@ -175,7 +175,7 @@ int main(int argc, char** argv)
     return 1;
   }
   runManager->SetUserInitialization(physicsList);
-  runManager->SetUserInitialization(new SourceLab::SourceLabActionInitialization(detector));
+  runManager->SetUserInitialization(new SourceLab::SourceLabActionInitialization(detector, emModel, enableRadioactiveDecay));
 
   auto visManager = new G4VisExecutive;
   visManager->Initialize();

@@ -65,6 +65,39 @@ Use `-r on|off` to enable or disable radioactive decay physics. For example:
 ./scripts/run-micromamba.sh run -r on -b run.mac
 ```
 
+## Output metadata and file naming
+
+sourceLab exposes output metadata commands under `/sourceLab/output/`.
+
+Set metadata in a macro before `/run/beamOn`:
+
+```tcl
+/sourceLab/output/tag co60-depth5
+/sourceLab/output/source co60
+/sourceLab/output/geometry waterbox
+/sourceLab/output/region sample
+/sourceLab/output/depth 5 cm
+```
+
+Output file naming:
+
+- default tag (unset): `sourceLab-default.root`
+- custom tag: `sourceLab-<tag>.root`
+
+Allowed `tag` characters are letters, digits, `-`, and `_`.
+
+The `runinfo` ntuple uses the standardized schema:
+
+- `Tag`
+- `Source`
+- `Geometry`
+- `Region`
+- `DepthCm`
+- `EMModel`
+- `RadioactiveDecay`
+- `Events`
+- `ThreadId`
+
 ## AI Usage
 
 AI-assisted development is used in this project.

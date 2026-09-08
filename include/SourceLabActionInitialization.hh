@@ -3,6 +3,8 @@
 
 #include "G4VUserActionInitialization.hh"
 
+#include "globals.hh"
+
 namespace SourceLab
 {
 class SourceLabDetectorConstruction;
@@ -10,7 +12,9 @@ class SourceLabDetectorConstruction;
 class SourceLabActionInitialization : public G4VUserActionInitialization
 {
   public:
-    explicit SourceLabActionInitialization(SourceLabDetectorConstruction* detectorConstruction = nullptr);
+    explicit SourceLabActionInitialization(SourceLabDetectorConstruction* detectorConstruction = nullptr,
+      const G4String& emModel = "option4",
+      G4bool enableRadioactiveDecay = false);
     ~SourceLabActionInitialization() override = default;
 
     void BuildForMaster() const override;
@@ -18,6 +22,8 @@ class SourceLabActionInitialization : public G4VUserActionInitialization
 
   private:
     SourceLabDetectorConstruction* fDetectorConstruction = nullptr;
+    G4String fEmModel;
+    G4bool fEnableRadioactiveDecay = false;
 };
 
 }  // namespace SourceLab
