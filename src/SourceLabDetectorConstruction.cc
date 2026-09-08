@@ -53,6 +53,11 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::Construct()
 
 void SourceLabDetectorConstruction::ConstructSDandField()
 {
+  auto* sampleSD = new G4MultiFunctionalDetector("SampleSD");
+  auto* energyScorer = new G4PSEnergyDeposit("eDep");
+  sampleSD->RegisterPrimitive(energyScorer);
+  G4SDManager::GetSDMpointer()->AddNewDetector(sampleSD);
+  SetSensitiveDetector("Sample", sampleSD);
 }
 
 void SourceLabDetectorConstruction::SetWorldSize(G4double worldSize)
@@ -137,12 +142,6 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* sampleSolid = new G4Tubs("Sample", 0., fConfig.sampleRadius, fConfig.sampleThickness / 2.0, 0., 2. * pi);
   auto* sampleLogic = new G4LogicalVolume(sampleSolid, sampleMat, "Sample");
   fSampleLog = sampleLogic;
-
-  auto* sampleSD = new G4MultiFunctionalDetector("SampleSD");
-  auto* energyScorer = new G4PSEnergyDeposit("eDep");
-  sampleSD->RegisterPrimitive(energyScorer);
-  G4SDManager::GetSDMpointer()->AddNewDetector(sampleSD);
-  sampleLogic->SetSensitiveDetector(sampleSD);
 
   G4double sampleCenterZ = -fConfig.phantomHalfZ + fConfig.sampleDepth + fConfig.sampleThickness / 2.0;
   new G4PVPlacement(nullptr, G4ThreeVector(0., 0., sampleCenterZ), sampleLogic, "Sample", phantomLogic, false, 0, fCheckOverlaps);

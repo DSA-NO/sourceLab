@@ -7,6 +7,7 @@
 #include "G4Run.hh"
 #include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4Threading.hh"
 
 namespace SourceLab
 {
@@ -21,14 +22,15 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->SetVerboseLevel(1);
   analysisManager->SetNtupleMerging(true);
   analysisManager->CreateH1("Edep", "Energy deposit in sample", 100, 0., 10 * MeV);
-  analysisManager->CreateNtuple("sample", "Sample energy deposit per event");
+  fSampleNtupleId = analysisManager->CreateNtuple("sample", "Sample energy deposit per event");
   analysisManager->CreateNtupleDColumn("Edep");
-  analysisManager->FinishNtuple();
+  analysisManager->FinishNtuple(fSampleNtupleId);
 
-  analysisManager->CreateNtuple("run", "Run-level sample summary");
+  fRunNtupleId = analysisManager->CreateNtuple("run", "Run-level sample summary");
   analysisManager->CreateNtupleIColumn("Events");
   analysisManager->CreateNtupleDColumn("RunEdep");
-  analysisManager->FinishNtuple(1);
+  analysisManager->CreateNtupleIColumn("ThreadId");
+  analysisManager->FinishNtuple(fRunNtupleId);
 }
 
 void SourceLabRunAction::BeginOfRunAction(const G4Run*)
@@ -40,10 +42,12 @@ void SourceLabRunAction::BeginOfRunAction(const G4Run*)
   analysisManager->Reset();
   analysisManager->OpenFile("sourceLab.root");
 
-  G4cout << "Starting run." << G4endl;
-  if (fDetectorConstruction) {
-    G4cout << "World size: " << fDetectorConstruction->GetWorldSize() / m << " m" << G4endl;
-    G4cout << "Sample depth: " << fDetectorConstruction->GetSampleDepth() / cm << " cm" << G4endl;
+  if (isMaster) {
+    G4cout << "Starting run." << G4endl;
+    if (fDetectorConstruction) {
+      G4cout << "World size: " << fDetectorConstruction->GetWorldSize() / m << " m" << G4endl;
+      G4cout << "Sample depth: " << fDetectorConstruction->GetSampleDepth() / cm << " cm" << G4endl;
+    }
   }
 }
 
@@ -53,16 +57,20 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
   accumulableManager->Merge();
 
   auto* analysisManager = G4AnalysisManager::Instance();
-  if (isMaster) {
-    analysisManager->FillNtupleIColumn(1, 0, run->GetNumberOfEvent());
-    analysisManager->FillNtupleDColumn(1, 1, GetRunEnergyDeposit());
-    analysisManager->AddNtupleRow(1);
+  const auto writeRunRow = !G4Threading::IsMultithreadedApplication() || !isMaster;
+  if (writeRunRow && fRunNtupleId >= 0) {
+    analysisManager->FillNtupleIColumn(fRunNtupleId, 0, run->GetNumberOfEvent());
+    analysisManager->FillNtupleDColumn(fRunNtupleId, 1, GetRunEnergyDeposit());
+    analysisManager->FillNtupleIColumn(fRunNtupleId, 2, G4Threading::G4GetThreadId());
+    analysisManager->AddNtupleRow(fRunNtupleId);
   }
   analysisManager->Write();
   analysisManager->CloseFile(false);
 
-  G4cout << "Run summary: " << run->GetNumberOfEvent() << " events" << G4endl;
-  G4cout << "Total energy deposit in sample: " << GetRunEnergyDeposit() / MeV << " MeV" << G4endl;
+  if (isMaster) {
+    G4cout << "Run summary: " << run->GetNumberOfEvent() << " events" << G4endl;
+    G4cout << "Total energy deposit in sample: " << GetRunEnergyDeposit() / MeV << " MeV" << G4endl;
+  }
 }
 
 void SourceLabRunAction::AddEventEnergyDeposit(G4double eventEnergyDeposit)
@@ -73,6 +81,11 @@ void SourceLabRunAction::AddEventEnergyDeposit(G4double eventEnergyDeposit)
 G4double SourceLabRunAction::GetRunEnergyDeposit() const
 {
   return fRunEnergyDeposit.GetValue();
+}
+
+G4int SourceLabRunAction::GetSampleNtupleId() const
+{
+  return fSampleNtupleId;
 }
 
 }  // namespace SourceLab

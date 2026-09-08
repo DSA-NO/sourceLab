@@ -70,8 +70,11 @@ void SourceLabEventAction::EndOfEventAction(const G4Event* anEvent)
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->FillH1(0, fEventEnergyDeposit);
-  analysisManager->FillNtupleDColumn(0, fEventEnergyDeposit);
-  analysisManager->AddNtupleRow();
+  const auto sampleNtupleId = fRunAction ? fRunAction->GetSampleNtupleId() : -1;
+  if (sampleNtupleId >= 0) {
+    analysisManager->FillNtupleDColumn(sampleNtupleId, 0, fEventEnergyDeposit);
+    analysisManager->AddNtupleRow(sampleNtupleId);
+  }
 }
 
 }  // namespace SourceLab
