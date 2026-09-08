@@ -241,6 +241,7 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
 
   auto* analysisManager = G4AnalysisManager::Instance();
   const auto writeRunRow = !G4Threading::IsMultithreadedApplication() || !isMaster;
+  const auto finalizeOutput = !G4Threading::IsMultithreadedApplication() || isMaster;
   if (writeRunRow && fRunNtupleId >= 0) {
     analysisManager->FillNtupleIColumn(fRunNtupleId, 0, run->GetNumberOfEvent());
     analysisManager->FillNtupleDColumn(fRunNtupleId, 1, GetRunDose());
@@ -261,10 +262,20 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     analysisManager->FillNtupleIColumn(fRunInfoNtupleId, 8, G4Threading::G4GetThreadId());
     analysisManager->AddNtupleRow(fRunInfoNtupleId);
   }
-  analysisManager->Write();
-  analysisManager->CloseFile(false);
+  if (finalizeOutput) {
+    analysisManager->Write();
+    analysisManager->CloseFile(false);
 
-  if (isMaster) {
+    G4cout << "Run complete: events=" << run->GetNumberOfEvent()
+           << ", file=" << BuildOutputFileName()
+           << ", source=" << fOutputSource
+           << ", geometry=" << fOutputGeometry
+           << ", region=" << fOutputRegion
+           << ", depth_cm=" << fOutputDepthCm
+           << ", em=" << fEmModel
+           << ", decay=" << (fEnableRadioactiveDecay ? "on" : "off")
+           << G4endl;
+
     G4cout << "Run summary: " << run->GetNumberOfEvent() << " events" << G4endl;
     G4cout << "Total dose in sample: " << G4BestUnit(GetRunDose(), "Dose") << G4endl;
     G4cout << "Total energy deposit in sample: " << G4BestUnit(GetRunEnergyDeposit(), "Energy") << G4endl;

@@ -108,6 +108,8 @@ The `runinfo` ntuple uses the standardized schema:
 
 Policy: `runinfo` stores one row per run in sequential mode, and one row per worker in MT mode. Use `ThreadId` to identify worker provenance.
 
+At end-of-run, output file write/close is finalized once in the safe context (sequential run or master in MT). A concise "Run complete" summary line is printed with events, output file, and key metadata.
+
 ## Cross-lab macro contract
 
 The three labs follow one shared macro structure contract so geometry differences do not fragment workflow conventions.
