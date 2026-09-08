@@ -12,4 +12,6 @@ dependencies:
   - gcc >=15,<16
   - gxx >=15,<16
   - python >=3.11
+  - numpy =1.26.*
+  - uproot =5.4.*
   - r-base >=4.3
