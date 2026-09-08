@@ -1,0 +1,10 @@
+# Co-60 source preset (source identity only).
+# Keep source configuration separated from run control for composable macros.
+
+/sourceLab/output/source co60
+
+/gps/particle gamma
+/gps/ene/type User
+/gps/hist/type energy
+/gps/hist/point 1.1732 0.9985
+/gps/hist/point 1.3325 0.9998

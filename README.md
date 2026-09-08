@@ -47,6 +47,11 @@ You can also pass a macro directly:
 ./scripts/run-micromamba.sh run -b run.mac
 ```
 
+The default run macro now uses composed source presets:
+
+- `macros/source-co60.mac`: canonical Co-60 source preset
+- `macros/source.mac`: compatibility alias that executes `source-co60.mac`
+
 For a quick visualization run:
 
 ```bash

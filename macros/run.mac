@@ -2,11 +2,24 @@
 /sourceLab/geometry/sampleDepth 10 cm
 /sourceLab/geometry/sampleRadius 5 cm
 /sourceLab/geometry/sampleThickness 1 mm
+
+# Allow nested /control/execute to resolve source macros in root or build workflows.
+/control/macroPath .:macros:../macros
+
+# Output metadata
+/sourceLab/output/tag run-simple
+/sourceLab/output/geometry waterbox
+/sourceLab/output/region sample
+/sourceLab/output/depth 10 cm
+
 /run/initialize
-/gps/particle gamma
-/gps/ene/type Mono
-/gps/ene/mono 1.25 MeV
+
+# Source composition pattern (shared style with doseLab)
+/control/execute source-co60.mac
+
+# Reference beam placement and direction
 /gps/pos/type Point
 /gps/pos/centre 0 0 -0.75 m
 /gps/ang/type iso
+
 /run/beamOn 100
