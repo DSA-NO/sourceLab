@@ -1,5 +1,7 @@
 # sourceLab
 
+[![CI (main)](https://github.com/DSA-NO/sourceLab/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/DSA-NO/sourceLab/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+
 This project is a Geant4 application focused on simulating radioactive and source-driven particle emission using a GPS-based primary generator setup.
 
 ## Start Here (new users)
