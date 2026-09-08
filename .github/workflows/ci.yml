@@ -52,3 +52,6 @@ jobs:
       - name: Smoke test (batch macro)
         working-directory: build-ci
         run: micromamba run -n geant4-sourceLab ./sourceLab -b run.mac
+
+      - name: Smoke test (decay-enabled Cs-137)
+        run: micromamba run -n geant4-sourceLab ./build-ci/sourceLab -r on -b macros/run-decay-cs137.mac

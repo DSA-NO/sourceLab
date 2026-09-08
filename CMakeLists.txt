@@ -13,6 +13,7 @@ file(GLOB SOURCE_LAB_HEADERS ${PROJECT_SOURCE_DIR}/include/*.hh)
 add_executable(sourceLab sourceLab.cc ${SOURCE_LAB_SOURCES} ${SOURCE_LAB_HEADERS})
 target_include_directories(sourceLab PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(sourceLab PRIVATE ${Geant4_LIBRARIES})
+target_compile_definitions(sourceLab PRIVATE SOURCELAB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 set(SOURCE_LAB_MACROS
   gui.mac

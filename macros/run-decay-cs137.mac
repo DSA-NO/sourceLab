@@ -1,0 +1,24 @@
+# Small Cs-137 decay example run.
+# Use with: sourceLab -r on -b macros/run-decay-cs137.mac
+
+/sourceLab/geometry/worldSize 2.5 m
+/sourceLab/geometry/sampleDepth 10 cm
+/sourceLab/geometry/sampleRadius 5 cm
+/sourceLab/geometry/sampleThickness 1 mm
+/control/macroPath .:macros:../macros
+
+/sourceLab/output/tag run-decay-cs137
+/sourceLab/output/geometry waterbox
+/sourceLab/output/region sample
+/sourceLab/output/depth 10 cm
+
+/run/initialize
+
+/control/execute source-cs137.mac
+
+/gps/pos/type Point
+/gps/pos/centre 0 0 -0.75 m
+/gps/ang/type iso
+
+/run/printProgress 20
+/run/beamOn 200

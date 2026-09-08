@@ -135,10 +135,73 @@ Shared source preset catalog (required naming):
 - `source-10mv.mac`
 - `source.mac` (alias macro pointing to the default preset for quick runs)
 
+Decay-enabled example preset:
+
+- `source-cs137.mac` (run with `-r on`; Cs-137 decays via Ba-137m)
+
+Small decay example run macro:
+
+- `run-decay-cs137.mac`
+- run with: `./scripts/run-micromamba.sh run -r on -b run-decay-cs137.mac`
+
 Nested macro path robustness:
 
 - add `/control/macroPath .:macros:../macros` before nested `/control/execute` in composed run macros
 - this keeps behavior consistent for repo-root and build-directory invocation styles
+
+## SourceLab slab contract (pre-implementation)
+
+This section defines the slab preset and override semantics before slab geometry code is added. The goal is deterministic behavior and stable cross-lab conventions.
+
+Planned command namespace:
+
+- `/sourceLab/scenario/type <preset>`
+- `/sourceLab/scenario/reset`
+- `/sourceLab/slabs/material <nistName>`
+- `/sourceLab/slabs/thickness <value> <unit>`
+- `/sourceLab/slabs/gap <value> <unit>`
+- `/sourceLab/slabs/offset <value> <unit>`
+- `/sourceLab/slabs/mode fixed|approach`
+- `/sourceLab/slabs/step <value> <unit>`
+- `/sourceLab/slabs/minGap <value> <unit>`
+- `/sourceLab/slabs/print`
+
+Planned presets:
+
+- `open`: slabs far from source, no enclosure
+- `approach`: symmetric closing motion toward source
+- `enclosed`: source enclosed by slab faces
+- `custom`: no preset defaults, explicit values only
+
+Override and precedence rules:
+
+1. Applying `/sourceLab/scenario/type <preset>` sets all preset-owned slab parameters.
+2. Explicit `/sourceLab/slabs/*` commands then override individual parameters.
+3. Re-applying `/sourceLab/scenario/type <preset>` re-applies preset defaults and overwrites prior slab overrides.
+4. Last command wins before `/run/initialize`.
+5. Geometry is frozen after `/run/initialize` for the active run.
+
+State contract:
+
+| Command group | Allowed states | Notes |
+| --- | --- | --- |
+| `/sourceLab/scenario/*` | `PreInit`, `Idle` | Preset selection and reset only. |
+| `/sourceLab/slabs/*` | `PreInit`, `Idle` | Parameter overrides and inspection. |
+| `/run/initialize` | Geant4 standard | Freezes effective slab configuration for run. |
+| `/run/beamOn` | Geant4 standard | No geometry mutation during beamOn. |
+
+Run metadata contract (runinfo):
+
+- `Scenario`: selected preset name (`open`, `approach`, `enclosed`, `custom`)
+- `SlabMaterial`
+- `SlabThicknessMm`
+- `SlabGapMm`
+- `SlabOffsetMm`
+- `SlabMode`
+- `SlabStepMm`
+- `SlabMinGapMm`
+
+These are in addition to the shared runinfo fields already used across labs (`Tag`, `Source`, `Geometry`, `Region`, `DepthCm`, `EMModel`, `RadioactiveDecay`, `Events`, `ThreadId`).
 
 ## AI Usage
 
