@@ -8,6 +8,7 @@
 #include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Threading.hh"
+#include "G4UnitsTable.hh"
 
 namespace SourceLab
 {
@@ -16,19 +17,27 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
 : fDetectorConstruction(detectorConstruction)
 {
   auto* accumulableManager = G4AccumulableManager::Instance();
+  accumulableManager->Register(fRunDose);
   accumulableManager->Register(fRunEnergyDeposit);
+  accumulableManager->Register(fRunTrackLength);
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->SetVerboseLevel(1);
   analysisManager->SetNtupleMerging(true);
+  analysisManager->CreateH1("Dose", "Dose in sample", 100, 0., 10 * gray);
   analysisManager->CreateH1("Edep", "Energy deposit in sample", 100, 0., 10 * MeV);
-  fSampleNtupleId = analysisManager->CreateNtuple("sample", "Sample energy deposit per event");
+  analysisManager->CreateH1("TrackL", "Track length in sample", 100, 0., 10 * cm);
+  fSampleNtupleId = analysisManager->CreateNtuple("sample", "Sample dose, energy deposit, and track length");
+  analysisManager->CreateNtupleDColumn("Dose");
   analysisManager->CreateNtupleDColumn("Edep");
+  analysisManager->CreateNtupleDColumn("TrackL");
   analysisManager->FinishNtuple(fSampleNtupleId);
 
   fRunNtupleId = analysisManager->CreateNtuple("run", "Run-level sample summary");
   analysisManager->CreateNtupleIColumn("Events");
-  analysisManager->CreateNtupleDColumn("RunEdep");
+  analysisManager->CreateNtupleDColumn("Dose");
+  analysisManager->CreateNtupleDColumn("Edep");
+  analysisManager->CreateNtupleDColumn("TrackL");
   analysisManager->CreateNtupleIColumn("ThreadId");
   analysisManager->FinishNtuple(fRunNtupleId);
 }
@@ -60,8 +69,10 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
   const auto writeRunRow = !G4Threading::IsMultithreadedApplication() || !isMaster;
   if (writeRunRow && fRunNtupleId >= 0) {
     analysisManager->FillNtupleIColumn(fRunNtupleId, 0, run->GetNumberOfEvent());
-    analysisManager->FillNtupleDColumn(fRunNtupleId, 1, GetRunEnergyDeposit());
-    analysisManager->FillNtupleIColumn(fRunNtupleId, 2, G4Threading::G4GetThreadId());
+    analysisManager->FillNtupleDColumn(fRunNtupleId, 1, GetRunDose());
+    analysisManager->FillNtupleDColumn(fRunNtupleId, 2, GetRunEnergyDeposit());
+    analysisManager->FillNtupleDColumn(fRunNtupleId, 3, GetRunTrackLength());
+    analysisManager->FillNtupleIColumn(fRunNtupleId, 4, G4Threading::G4GetThreadId());
     analysisManager->AddNtupleRow(fRunNtupleId);
   }
   analysisManager->Write();
@@ -69,18 +80,32 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
 
   if (isMaster) {
     G4cout << "Run summary: " << run->GetNumberOfEvent() << " events" << G4endl;
-    G4cout << "Total energy deposit in sample: " << GetRunEnergyDeposit() / MeV << " MeV" << G4endl;
+    G4cout << "Total dose in sample: " << G4BestUnit(GetRunDose(), "Dose") << G4endl;
+    G4cout << "Total energy deposit in sample: " << G4BestUnit(GetRunEnergyDeposit(), "Energy") << G4endl;
+    G4cout << "Total charged track length in sample: " << G4BestUnit(GetRunTrackLength(), "Length") << G4endl;
   }
 }
 
-void SourceLabRunAction::AddEventEnergyDeposit(G4double eventEnergyDeposit)
+void SourceLabRunAction::AddEventScoring(G4double eventDose, G4double eventEnergyDeposit, G4double eventTrackLength)
 {
+  fRunDose += eventDose;
   fRunEnergyDeposit += eventEnergyDeposit;
+  fRunTrackLength += eventTrackLength;
+}
+
+G4double SourceLabRunAction::GetRunDose() const
+{
+  return fRunDose.GetValue();
 }
 
 G4double SourceLabRunAction::GetRunEnergyDeposit() const
 {
   return fRunEnergyDeposit.GetValue();
+}
+
+G4double SourceLabRunAction::GetRunTrackLength() const
+{
+  return fRunTrackLength.GetValue();
 }
 
 G4int SourceLabRunAction::GetSampleNtupleId() const

@@ -6,8 +6,11 @@
 #include "G4Material.hh"
 #include "G4MultiFunctionalDetector.hh"
 #include "G4NistManager.hh"
+#include "G4PSDoseDeposit.hh"
 #include "G4PSEnergyDeposit.hh"
+#include "G4PSTrackLength.hh"
 #include "G4PVPlacement.hh"
+#include "G4SDChargedFilter.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
@@ -53,11 +56,21 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::Construct()
 
 void SourceLabDetectorConstruction::ConstructSDandField()
 {
-  auto* sampleSD = new G4MultiFunctionalDetector("SampleSD");
-  auto* energyScorer = new G4PSEnergyDeposit("eDep");
-  sampleSD->RegisterPrimitive(energyScorer);
-  G4SDManager::GetSDMpointer()->AddNewDetector(sampleSD);
-  SetSensitiveDetector("Sample", sampleSD);
+  auto* sampleDetector = new G4MultiFunctionalDetector("Sample");
+  G4SDManager::GetSDMpointer()->AddNewDetector(sampleDetector);
+
+  auto* doseScorer = new G4PSDoseDeposit("Dose");
+  sampleDetector->RegisterPrimitive(doseScorer);
+
+  auto* energyScorer = new G4PSEnergyDeposit("Edep");
+  sampleDetector->RegisterPrimitive(energyScorer);
+
+  auto* trackLengthScorer = new G4PSTrackLength("TrackL");
+  auto* charged = new G4SDChargedFilter("chargedFilter");
+  trackLengthScorer->SetFilter(charged);
+  sampleDetector->RegisterPrimitive(trackLengthScorer);
+
+  SetSensitiveDetector("Sample", sampleDetector);
 }
 
 void SourceLabDetectorConstruction::SetWorldSize(G4double worldSize)

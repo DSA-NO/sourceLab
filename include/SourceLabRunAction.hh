@@ -17,13 +17,17 @@ class SourceLabRunAction : public G4UserRunAction
 
     void BeginOfRunAction(const G4Run*) override;
     void EndOfRunAction(const G4Run*) override;
-    void AddEventEnergyDeposit(G4double eventEnergyDeposit);
+    void AddEventScoring(G4double eventDose, G4double eventEnergyDeposit, G4double eventTrackLength);
+    G4double GetRunDose() const;
     G4double GetRunEnergyDeposit() const;
+    G4double GetRunTrackLength() const;
     G4int GetSampleNtupleId() const;
 
   private:
     SourceLabDetectorConstruction* fDetectorConstruction = nullptr;
+    G4Accumulable<G4double> fRunDose = 0.0;
     G4Accumulable<G4double> fRunEnergyDeposit = 0.0;
+    G4Accumulable<G4double> fRunTrackLength = 0.0;
     G4int fSampleNtupleId = -1;
     G4int fRunNtupleId = -1;
 };
