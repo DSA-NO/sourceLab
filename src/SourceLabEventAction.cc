@@ -1,5 +1,8 @@
 #include "SourceLabEventAction.hh"
 
+#include "SourceLabRunAction.hh"
+
+#include "G4AnalysisManager.hh"
 #include "G4Event.hh"
 #include "G4SDManager.hh"
 #include "G4THitsMap.hh"
@@ -8,32 +11,45 @@
 namespace SourceLab
 {
 
-SourceLabEventAction::SourceLabEventAction() = default;
-
-void SourceLabEventAction::Reset()
+SourceLabEventAction::SourceLabEventAction(SourceLabRunAction* runAction)
+: fRunAction(runAction)
 {
-  fTotalEnergyDeposit = 0.0;
 }
 
-G4double SourceLabEventAction::GetTotalEnergyDeposit() const
+void SourceLabEventAction::ResetEvent()
 {
-  return fTotalEnergyDeposit;
+  fEventEnergyDeposit = 0.0;
+}
+
+G4double SourceLabEventAction::GetEventEnergyDeposit() const
+{
+  return fEventEnergyDeposit;
 }
 
 void SourceLabEventAction::BeginOfEventAction(const G4Event*)
 {
-  Reset();
+  ResetEvent();
 }
 
 void SourceLabEventAction::EndOfEventAction(const G4Event* anEvent)
 {
+  if (fSampleEdepCollectionID < 0) {
+    fSampleEdepCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("SampleSD/eDep");
+    if (fSampleEdepCollectionID < 0) {
+      return;
+    }
+  }
+
   auto* hce = anEvent->GetHCofThisEvent();
   if (!hce) {
     return;
   }
 
-  const G4int collectionID = G4SDManager::GetSDMpointer()->GetCollectionID("SampleSD/eDep");
-  auto* hc = hce->GetHC(collectionID);
+  if (fSampleEdepCollectionID >= hce->GetNumberOfCollections()) {
+    return;
+  }
+
+  auto* hc = hce->GetHC(fSampleEdepCollectionID);
   if (!hc) {
     return;
   }
@@ -45,8 +61,17 @@ void SourceLabEventAction::EndOfEventAction(const G4Event* anEvent)
 
   auto* map = hitsMap->GetMap();
   for (auto const& hit : *map) {
-    fTotalEnergyDeposit += *(hit.second);
+    fEventEnergyDeposit += *(hit.second);
   }
+
+  if (fRunAction) {
+    fRunAction->AddEventEnergyDeposit(fEventEnergyDeposit);
+  }
+
+  auto* analysisManager = G4AnalysisManager::Instance();
+  analysisManager->FillH1(0, fEventEnergyDeposit);
+  analysisManager->FillNtupleDColumn(0, fEventEnergyDeposit);
+  analysisManager->AddNtupleRow();
 }
 
 }  // namespace SourceLab

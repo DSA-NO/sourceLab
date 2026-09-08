@@ -1,6 +1,7 @@
 #ifndef SourceLabRunAction_h
 #define SourceLabRunAction_h 1
 
+#include "G4Accumulable.hh"
 #include "G4UserRunAction.hh"
 
 namespace SourceLab
@@ -15,9 +16,12 @@ class SourceLabRunAction : public G4UserRunAction
 
     void BeginOfRunAction(const G4Run*) override;
     void EndOfRunAction(const G4Run*) override;
+    void AddEventEnergyDeposit(G4double eventEnergyDeposit);
+    G4double GetRunEnergyDeposit() const;
 
   private:
     SourceLabDetectorConstruction* fDetectorConstruction = nullptr;
+    G4Accumulable<G4double> fRunEnergyDeposit = 0.0;
 };
 
 }  // namespace SourceLab

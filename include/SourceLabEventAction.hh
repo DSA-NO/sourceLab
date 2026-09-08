@@ -7,20 +7,24 @@
 
 namespace SourceLab
 {
+class SourceLabRunAction;
+
 class SourceLabEventAction : public G4UserEventAction
 {
   public:
-    SourceLabEventAction();
+    explicit SourceLabEventAction(SourceLabRunAction* runAction = nullptr);
     ~SourceLabEventAction() override = default;
 
     void BeginOfEventAction(const G4Event*) override;
     void EndOfEventAction(const G4Event*) override;
 
-    void Reset();
-    G4double GetTotalEnergyDeposit() const;
+    void ResetEvent();
+    G4double GetEventEnergyDeposit() const;
 
   private:
-    G4double fTotalEnergyDeposit = 0.0;
+    SourceLabRunAction* fRunAction = nullptr;
+    G4int fSampleEdepCollectionID = -1;
+    G4double fEventEnergyDeposit = 0.0;
 };
 
 }  // namespace SourceLab

@@ -51,6 +51,12 @@ For a quick visualization run:
 ./scripts/run-micromamba.sh run -v init_vis.mac
 ```
 
+Use `-p option4|livermore|penelope` to select the EM sub-model. For example:
+
+```bash
+./scripts/run-micromamba.sh run -p livermore -b run.mac
+```
+
 ## AI Usage
 
 AI-assisted development is used in this project.

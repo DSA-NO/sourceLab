@@ -2,6 +2,9 @@
 #include "SourceLabDetectorConstruction.hh"
 
 #include "FTFP_BERT.hh"
+#include "G4EmLivermorePhysics.hh"
+#include "G4EmPenelopePhysics.hh"
+#include "G4EmStandardPhysics_option4.hh"
 #include "G4RunManagerFactory.hh"
 #include "G4UIExecutive.hh"
 #include "G4UImanager.hh"
@@ -15,10 +18,11 @@ namespace
 void PrintUsage()
 {
   G4cout << " Usage: " << G4endl;
-  G4cout << " sourceLab [-b macro] [-v macro] [-t nThreads]" << G4endl;
+  G4cout << " sourceLab [-b macro] [-v macro] [-t nThreads] [-p emModel]" << G4endl;
   G4cout << "   -b macro  : batch mode, execute the given macro" << G4endl;
   G4cout << "   -v macro  : visualize, execute the macro, and keep the UI open" << G4endl;
   G4cout << "   -t N      : number of threads for multi-threaded builds" << G4endl;
+  G4cout << "   -p model  : EM model: option4 (default), livermore, penelope" << G4endl;
   G4cout << "   (no args) : interactive session" << G4endl;
 }
 
@@ -48,12 +52,33 @@ bool ExecuteMacroWithFallback(G4UImanager* uiManager, const G4String& macro)
          << "' in current directory, macros/, or build/." << G4endl;
   return false;
 }
+
+FTFP_BERT* CreatePhysicsList(const G4String& emModel)
+{
+  auto* physicsList = new FTFP_BERT;
+  if (emModel == "option4") {
+    physicsList->ReplacePhysics(new G4EmStandardPhysics_option4());
+  }
+  else if (emModel == "livermore") {
+    physicsList->ReplacePhysics(new G4EmLivermorePhysics());
+  }
+  else if (emModel == "penelope") {
+    physicsList->ReplacePhysics(new G4EmPenelopePhysics());
+  }
+  else {
+    G4cerr << "Error: unknown EM model '" << emModel
+           << "'. Use: option4, livermore, penelope" << G4endl;
+    return nullptr;
+  }
+  return physicsList;
+}
 }  // namespace
 
 int main(int argc, char** argv)
 {
   G4String macro;
   G4String visMacro;
+  G4String emModel = "option4";
 
 #ifdef G4MULTITHREADED
   G4int nThreads = 0;
@@ -74,6 +99,13 @@ int main(int argc, char** argv)
         return 1;
       }
       visMacro = argv[++i];
+    }
+    else if (arg == "-p") {
+      if (i + 1 >= argc) {
+        PrintUsage();
+        return 1;
+      }
+      emModel = argv[++i];
     }
 #ifdef G4MULTITHREADED
     else if (arg == "-t") {
@@ -110,7 +142,12 @@ int main(int argc, char** argv)
 
   auto detector = new SourceLab::SourceLabDetectorConstruction();
   runManager->SetUserInitialization(detector);
-  runManager->SetUserInitialization(new FTFP_BERT);
+  auto* physicsList = CreatePhysicsList(emModel);
+  if (!physicsList) {
+    delete runManager;
+    return 1;
+  }
+  runManager->SetUserInitialization(physicsList);
   runManager->SetUserInitialization(new SourceLab::SourceLabActionInitialization(detector));
 
   auto visManager = new G4VisExecutive;
