@@ -11,10 +11,15 @@
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
 
+#include "SourceLabMacroRuntime.hh"
+
 #include <array>
 #include <filesystem>
 #include <fstream>
 #include <string>
+
+using SourceLab::MacroRuntime::ApplyWorkingDirectory;
+using SourceLab::MacroRuntime::ResolveRuntimeMacroConfig;
 
 namespace
 {
@@ -59,109 +64,6 @@ bool ExecuteMacroWithFallback(G4UImanager* uiManager, const G4String& macro)
   G4cerr << "Error: could not locate macro '" << macro
          << "' in current directory, macros/, or build/." << G4endl;
   return false;
-}
-
-struct RuntimeMacroConfig
-{
-  G4String batchMacroArg;
-  G4String visMacroArg;
-  G4String workingDirectory;
-};
-
-bool IsExistingDirectory(const std::filesystem::path& path)
-{
-  std::error_code ec;
-  return std::filesystem::exists(path, ec) && std::filesystem::is_directory(path, ec);
-}
-
-std::filesystem::path ResolveExecutableDir(char** argv)
-{
-  if (argv && argv[0] && *argv[0]) {
-    std::error_code ec;
-    const auto exePath = std::filesystem::weakly_canonical(argv[0], ec);
-    if (!ec) {
-      return exePath.parent_path();
-    }
-  }
-  return {};
-}
-
-RuntimeMacroConfig ResolveRuntimeMacroConfig(char** argv,
-                                             const G4String& macro,
-                                             const G4String& visMacro)
-{
-  RuntimeMacroConfig config;
-
-  auto macroArgForExecution = [](const G4String& macroArg) {
-    if (macroArg.empty()) {
-      return macroArg;
-    }
-    const std::filesystem::path path{std::string(macroArg)};
-    if (path.has_parent_path()) {
-      return G4String(path.filename().string());
-    }
-    return macroArg;
-  };
-
-  auto macroParentIfAny = [](const G4String& macroArg) {
-    if (macroArg.empty()) {
-      return std::filesystem::path{};
-    }
-    const std::filesystem::path path{std::string(macroArg)};
-    if (!path.has_parent_path()) {
-      return std::filesystem::path{};
-    }
-    return std::filesystem::absolute(path).parent_path();
-  };
-
-  config.batchMacroArg = macroArgForExecution(macro);
-  config.visMacroArg = macroArgForExecution(visMacro);
-
-  const auto current = std::filesystem::current_path();
-  const auto exeDir = ResolveExecutableDir(argv);
-  const auto batchMacroParent = macroParentIfAny(macro);
-  if (!batchMacroParent.empty() && IsExistingDirectory(batchMacroParent)) {
-    config.workingDirectory = G4String(batchMacroParent.string());
-    return config;
-  }
-
-  const auto visMacroParent = macroParentIfAny(visMacro);
-  if (!visMacroParent.empty() && IsExistingDirectory(visMacroParent)) {
-    config.workingDirectory = G4String(visMacroParent.string());
-    return config;
-  }
-
-  if (!exeDir.empty() && IsExistingDirectory(exeDir) && std::filesystem::exists(exeDir / "init_vis.mac")) {
-    config.workingDirectory = G4String(exeDir.string());
-    return config;
-  }
-
-  if (IsExistingDirectory(current / "macros") || std::filesystem::exists(current / "init_vis.mac")) {
-    config.workingDirectory = G4String(current.string());
-    return config;
-  }
-
-  const std::filesystem::path sourceMacros = std::string(SOURCELAB_SOURCE_DIR) + "/macros";
-  if (IsExistingDirectory(sourceMacros)) {
-    config.workingDirectory = G4String(sourceMacros.string());
-    return config;
-  }
-
-  config.workingDirectory = G4String(current.string());
-  return config;
-}
-
-G4bool ApplyWorkingDirectory(const RuntimeMacroConfig& config, G4String& warning)
-{
-  std::error_code ec;
-  std::filesystem::current_path(std::string(config.workingDirectory), ec);
-  if (ec) {
-    warning = "failed to switch working directory to '" + config.workingDirectory
-              + "' for macro resolution.";
-    return false;
-  }
-  warning = "";
-  return true;
 }
 
 FTFP_BERT* CreatePhysicsList(const G4String& emModel, G4bool enableRadioactiveDecay)
