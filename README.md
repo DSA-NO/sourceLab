@@ -84,6 +84,9 @@ Set metadata in a macro before `/run/beamOn`:
 /sourceLab/output/depth 5 cm
 ```
 
+Allowed source labels are: `unspecified`, `co60`, `cs137`, `6mv`, `10mv`.
+Legacy aliases like `linac-6mv`, `linac-10mv`, `cs-137`, and `cobalt-60` are accepted and canonicalized.
+
 Output file naming:
 
 - default tag (unset): `sourceLab-default.root`

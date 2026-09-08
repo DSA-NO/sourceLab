@@ -48,8 +48,12 @@ bool ExecuteMacroWithFallback(G4UImanager* uiManager, const G4String& macro)
     if (!FileExists(candidate)) {
       continue;
     }
-    uiManager->ApplyCommand("/control/execute " + candidate);
-    return true;
+    const auto status = uiManager->ApplyCommand("/control/execute " + candidate);
+    if (status == 0) {
+      return true;
+    }
+    G4cerr << "Error: macro '" << candidate << "' failed with UI status " << status << "." << G4endl;
+    return false;
   }
 
   G4cerr << "Error: could not locate macro '" << macro
