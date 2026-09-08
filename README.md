@@ -106,6 +106,8 @@ The `runinfo` ntuple uses the standardized schema:
 - `Events`
 - `ThreadId`
 
+Policy: `runinfo` stores one row per run in sequential mode, and one row per worker in MT mode. Use `ThreadId` to identify worker provenance.
+
 ## Cross-lab macro contract
 
 The three labs follow one shared macro structure contract so geometry differences do not fragment workflow conventions.
