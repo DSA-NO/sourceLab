@@ -16,6 +16,7 @@
 
 # Keep the run in a clean visual smoke-test state.
 /run/initialize
+/vis/open OGL
 /control/execute vis.mac
 
 # Source composition pattern and a short beam for easy viewing.
