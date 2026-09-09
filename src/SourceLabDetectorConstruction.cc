@@ -87,8 +87,23 @@ void SourceLabDetectorConstruction::ConstructSDandField()
   capTrackLengthScorer->SetFilter(capCharged);
   capDetector->RegisterPrimitive(capTrackLengthScorer);
 
+  auto* depthDetector = new G4MultiFunctionalDetector("SampleDepth");
+  G4SDManager::GetSDMpointer()->AddNewDetector(depthDetector);
+
+  auto* depthDoseScorer = new G4PSDoseDeposit("Dose");
+  depthDetector->RegisterPrimitive(depthDoseScorer);
+
+  auto* depthEnergyScorer = new G4PSEnergyDeposit("Edep");
+  depthDetector->RegisterPrimitive(depthEnergyScorer);
+
+  auto* depthTrackLengthScorer = new G4PSTrackLength("TrackL");
+  auto* depthCharged = new G4SDChargedFilter("chargedFilter");
+  depthTrackLengthScorer->SetFilter(depthCharged);
+  depthDetector->RegisterPrimitive(depthTrackLengthScorer);
+
   SetSensitiveDetector("Sample", sampleDetector);
   SetSensitiveDetector("SampleEndCap", capDetector);
+  SetSensitiveDetector("SampleDepth", depthDetector);
 }
 
 void SourceLabDetectorConstruction::SetWorldSize(G4double worldSize)
@@ -285,6 +300,15 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* sampleEndCapSolid = new G4Tubs("SampleEndCap", 0., capRadius, capHalfThickness, 0., 2. * pi);
   auto* sampleEndCapLogic = new G4LogicalVolume(sampleEndCapSolid, sampleMat, "SampleEndCap");
 
+  G4double depthRadius = capRadius;
+  G4double depthThickness = capThickness;
+  G4double depthHalfThickness = depthThickness / 2.0;
+  auto* sampleDepthSolid = new G4Tubs("SampleDepth", 0., depthRadius, depthHalfThickness, 0., 2. * pi);
+  auto* sampleDepthLogic = new G4LogicalVolume(sampleDepthSolid, sampleMat, "SampleDepth");
+
+  G4double maxDepthInset = 0.5 * fConfig.sampleThickness - depthHalfThickness;
+  G4double depthOffset = std::min(1.0 * cm, std::max(0.0, maxDepthInset));
+
   G4double sampleCenterZ = -fConfig.phantomHalfZ + fConfig.sampleDepth + sampleShellHalfThickness;
   new G4PVPlacement(BuildSampleRotation(), G4ThreeVector(0., 0., sampleCenterZ), sampleShellLogic, "SampleShell", phantomLogic, false, 0, fCheckOverlaps);
   new G4PVPlacement(nullptr, G4ThreeVector(), sampleLogic, "Sample", sampleShellLogic, false, 0, fCheckOverlaps);
@@ -296,6 +320,14 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
                     false,
                     0,
                     fCheckOverlaps);
+  new G4PVPlacement(nullptr,
+                    G4ThreeVector(0., 0., depthOffset),
+                    sampleDepthLogic,
+                    "SampleDepth",
+                    sampleLogic,
+                    false,
+                    0,
+                    fCheckOverlaps);
 
   auto* sampleVis = new G4VisAttributes(G4Colour(0.9, 0.8, 0.3, 0.4));
   sampleVis->SetForceSolid(true);
@@ -304,6 +336,10 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* sampleEndCapVis = new G4VisAttributes(G4Colour(0.8, 0.2, 0.2, 0.8));
   sampleEndCapVis->SetForceSolid(true);
   sampleEndCapLogic->SetVisAttributes(sampleEndCapVis);
+
+  auto* sampleDepthVis = new G4VisAttributes(G4Colour(0.2, 0.8, 0.4, 0.8));
+  sampleDepthVis->SetForceSolid(true);
+  sampleDepthLogic->SetVisAttributes(sampleDepthVis);
 
   auto* sampleShellVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
   sampleShellVis->SetForceSolid(true);

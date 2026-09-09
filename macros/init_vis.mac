@@ -1,11 +1,13 @@
+# Visualization bootstrap for the lab.
+#
+# Geometry setup, source presets, and scenario commands should already be set by
+# the caller before this file is executed. This file initializes the run and then
+# applies the standard visual scene configuration used by the lab.
+
 /control/verbose 0
 /tracking/verbose 0
 /run/verbose 0
 /event/verbose 0
+
 /run/initialize
-/vis/open OGL
-/vis/viewer/flush
-/vis/drawVolume
-/vis/scene/add/axes 0 0 0 1 m
-/vis/scene/add/trajectories smooth
-/vis/scene/endOfEventAction accumulate 100
+/control/execute vis.mac

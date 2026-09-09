@@ -5,6 +5,7 @@
 /sourceLab/geometry/sampleSkinThickness 0.25 mm
 /sourceLab/geometry/sampleEndCapArea 1 cm2
 /sourceLab/geometry/sampleEndCapThickness 0.25 mm
+# The internal depth scorer sits 1 cm inside the sample body and uses the same radius/thickness as the end cap.
 
 # Allow nested /control/execute to resolve source macros in root or build workflows.
 /control/macroPath .:macros:../macros

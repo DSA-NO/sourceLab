@@ -1,0 +1,36 @@
+# Simple batch smoke test for sourceLab.
+#
+# This is the minimal reference run for quick validation of geometry,
+# source composition, and beam delivery without the full reference-suite setup.
+#
+# Keep nested macro resolution robust in both repo-root and build-directory runs.
+/control/macroPath .:macros:../macros
+
+# Minimal geometry setup for the sample shell and end-cap scorer.
+/sourceLab/geometry/worldSize 2.5 m
+/sourceLab/geometry/sampleDepth 10 cm
+/sourceLab/geometry/sampleRadius 5 cm
+/sourceLab/geometry/sampleThickness 1 mm
+/sourceLab/geometry/sampleSkinThickness 0.25 mm
+/sourceLab/geometry/sampleEndCapArea 1 cm2
+/sourceLab/geometry/sampleEndCapThickness 0.25 mm
+
+# Output metadata for a quick smoke test.
+/sourceLab/output/tag run-simple
+/sourceLab/output/source co60
+/sourceLab/output/geometry waterbox
+/sourceLab/output/region sample
+/sourceLab/output/depth 10 cm
+
+/run/initialize
+
+# Source composition pattern: source preset only; no /run/initialize here.
+/control/execute source-co60.mac
+
+# Simple beam setup.
+/gps/pos/type Point
+/gps/pos/centre 0 0 -0.75 m
+/gps/ang/type iso
+
+/run/printProgress 20
+/run/beamOn 100

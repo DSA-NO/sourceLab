@@ -47,6 +47,13 @@ You can also pass a macro directly:
 ./scripts/run-micromamba.sh run -b run.mac
 ```
 
+There are also simple smoke-test macro examples:
+
+```bash
+./scripts/run-micromamba.sh run -b run-simple.mac
+./scripts/run-micromamba.sh run -v vis-simple.mac
+```
+
 The default run macro now uses composed source presets:
 
 - `macros/source-co60.mac`: canonical Co-60 source preset

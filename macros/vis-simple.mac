@@ -1,0 +1,29 @@
+# Simple visual smoke test for sourceLab.
+#
+# This is the minimal visualization example for interactive inspection of the
+# detector shell, end-cap scorer, and source beam arrangement.
+
+/control/macroPath .:macros:../macros
+
+# Minimal geometry setup.
+/sourceLab/geometry/worldSize 2.5 m
+/sourceLab/geometry/sampleDepth 10 cm
+/sourceLab/geometry/sampleRadius 5 cm
+/sourceLab/geometry/sampleThickness 1 mm
+/sourceLab/geometry/sampleSkinThickness 0.25 mm
+/sourceLab/geometry/sampleEndCapArea 1 cm2
+/sourceLab/geometry/sampleEndCapThickness 0.25 mm
+
+# Keep the run in a clean visual smoke-test state.
+/run/initialize
+/control/execute vis.mac
+
+# Source composition pattern and a short beam for easy viewing.
+/control/execute source-co60.mac
+
+/gps/pos/type Point
+/gps/pos/centre 0 0 -0.75 m
+/gps/ang/type iso
+
+/run/printProgress 1
+/run/beamOn 5
