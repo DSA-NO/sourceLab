@@ -1,6 +1,8 @@
 #include "SourceLabDetectorConstruction.hh"
 #include "SourceLabDetectorMessenger.hh"
 
+#include <cmath>
+
 #include "G4Box.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Material.hh"
@@ -10,8 +12,9 @@
 #include "G4PSEnergyDeposit.hh"
 #include "G4PSTrackLength.hh"
 #include "G4PVPlacement.hh"
-#include "G4SDChargedFilter.hh"
 #include "G4PhysicalConstants.hh"
+#include "G4RotationMatrix.hh"
+#include "G4SDChargedFilter.hh"
 #include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Tubs.hh"
@@ -70,7 +73,22 @@ void SourceLabDetectorConstruction::ConstructSDandField()
   trackLengthScorer->SetFilter(charged);
   sampleDetector->RegisterPrimitive(trackLengthScorer);
 
+  auto* capDetector = new G4MultiFunctionalDetector("SampleEndCap");
+  G4SDManager::GetSDMpointer()->AddNewDetector(capDetector);
+
+  auto* capDoseScorer = new G4PSDoseDeposit("Dose");
+  capDetector->RegisterPrimitive(capDoseScorer);
+
+  auto* capEnergyScorer = new G4PSEnergyDeposit("Edep");
+  capDetector->RegisterPrimitive(capEnergyScorer);
+
+  auto* capTrackLengthScorer = new G4PSTrackLength("TrackL");
+  auto* capCharged = new G4SDChargedFilter("chargedFilter");
+  capTrackLengthScorer->SetFilter(capCharged);
+  capDetector->RegisterPrimitive(capTrackLengthScorer);
+
   SetSensitiveDetector("Sample", sampleDetector);
+  SetSensitiveDetector("SampleEndCap", capDetector);
 }
 
 void SourceLabDetectorConstruction::SetWorldSize(G4double worldSize)
@@ -107,6 +125,41 @@ void SourceLabDetectorConstruction::SetSampleSize(G4double radius, G4double thic
   }
 }
 
+void SourceLabDetectorConstruction::SetSampleSkinThickness(G4double thickness)
+{
+  if (thickness >= 0.) {
+    fConfig.sampleSkinThickness = thickness;
+  }
+}
+
+void SourceLabDetectorConstruction::SetSampleEndCapArea(G4double area)
+{
+  if (area > 0.) {
+    fConfig.sampleEndCapTargetArea = area;
+  }
+}
+
+void SourceLabDetectorConstruction::SetSampleEndCapThickness(G4double thickness)
+{
+  if (thickness >= 0.) {
+    fConfig.sampleEndCapThickness = thickness;
+  }
+}
+
+void SourceLabDetectorConstruction::SetSampleAxis(const G4String& axisName)
+{
+  const G4String lowered = axisName;
+  if (lowered == "x" || lowered == "X") {
+    fConfig.sampleAxis = SampleAxis::kX;
+  }
+  else if (lowered == "y" || lowered == "Y") {
+    fConfig.sampleAxis = SampleAxis::kY;
+  }
+  else {
+    fConfig.sampleAxis = SampleAxis::kZ;
+  }
+}
+
 G4double SourceLabDetectorConstruction::GetWorldSize() const
 {
   return fConfig.worldSize;
@@ -127,6 +180,66 @@ G4double SourceLabDetectorConstruction::GetSampleThickness() const
   return fConfig.sampleThickness;
 }
 
+G4double SourceLabDetectorConstruction::GetSampleSkinThickness() const
+{
+  return fConfig.sampleSkinThickness;
+}
+
+G4double SourceLabDetectorConstruction::GetSampleEndCapArea() const
+{
+  return fConfig.sampleEndCapTargetArea;
+}
+
+G4double SourceLabDetectorConstruction::GetSampleEndCapThickness() const
+{
+  return fConfig.sampleEndCapThickness;
+}
+
+G4double SourceLabDetectorConstruction::ComputeSampleEndCapRadius() const
+{
+  const G4double shellRadius = fConfig.sampleRadius + fConfig.sampleSkinThickness;
+  if (shellRadius <= 0.) {
+    return 0.;
+  }
+
+  const G4double targetRadius = std::sqrt(fConfig.sampleEndCapTargetArea / pi);
+  if (targetRadius < shellRadius) {
+    return targetRadius;
+  }
+
+  return 0.5 * shellRadius;
+}
+
+G4String SourceLabDetectorConstruction::GetSampleAxis() const
+{
+  switch (fConfig.sampleAxis) {
+    case SampleAxis::kX:
+      return "x";
+    case SampleAxis::kY:
+      return "y";
+    case SampleAxis::kZ:
+    default:
+      return "z";
+  }
+}
+
+G4RotationMatrix* SourceLabDetectorConstruction::BuildSampleRotation() const
+{
+  if (fConfig.sampleAxis == SampleAxis::kZ) {
+    return nullptr;
+  }
+
+  auto* rotation = new G4RotationMatrix();
+  if (fConfig.sampleAxis == SampleAxis::kX) {
+    rotation->rotateY(90. * deg);
+  }
+  else if (fConfig.sampleAxis == SampleAxis::kY) {
+    rotation->rotateX(-90. * deg);
+  }
+
+  return rotation;
+}
+
 void SourceLabDetectorConstruction::PrintConfig() const
 {
   G4cout << "SourceLab detector configuration:" << G4endl;
@@ -136,6 +249,10 @@ void SourceLabDetectorConstruction::PrintConfig() const
   G4cout << "  sampleDepth = " << fConfig.sampleDepth / cm << " cm" << G4endl;
   G4cout << "  sampleRadius = " << fConfig.sampleRadius / cm << " cm" << G4endl;
   G4cout << "  sampleThickness = " << fConfig.sampleThickness / mm << " mm" << G4endl;
+  G4cout << "  sampleSkinThickness = " << fConfig.sampleSkinThickness / mm << " mm" << G4endl;
+  G4cout << "  sampleEndCapTargetArea = " << fConfig.sampleEndCapTargetArea / (cm * cm) << " cm2" << G4endl;
+  G4cout << "  sampleEndCapThickness = " << fConfig.sampleEndCapThickness / mm << " mm" << G4endl;
+  G4cout << "  sampleAxis = " << GetSampleAxis() << G4endl;
 }
 
 G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
@@ -152,16 +269,45 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* phantomLogic = new G4LogicalVolume(phantomSolid, phantomMat, "Phantom");
   new G4PVPlacement(nullptr, G4ThreeVector(0., 0., 0.), phantomLogic, "Phantom", worldLogic, false, 0, fCheckOverlaps);
 
+  G4double sampleOuterRadius = fConfig.sampleRadius + fConfig.sampleSkinThickness;
+  G4double sampleShellHalfThickness = fConfig.sampleThickness / 2.0 + fConfig.sampleSkinThickness;
+
+  auto* sampleShellSolid = new G4Tubs("SampleShell", 0., sampleOuterRadius, sampleShellHalfThickness, 0., 2. * pi);
+  auto* sampleShellLogic = new G4LogicalVolume(sampleShellSolid, sampleMat, "SampleShell");
+
   auto* sampleSolid = new G4Tubs("Sample", 0., fConfig.sampleRadius, fConfig.sampleThickness / 2.0, 0., 2. * pi);
   auto* sampleLogic = new G4LogicalVolume(sampleSolid, sampleMat, "Sample");
   fSampleLog = sampleLogic;
 
-  G4double sampleCenterZ = -fConfig.phantomHalfZ + fConfig.sampleDepth + fConfig.sampleThickness / 2.0;
-  new G4PVPlacement(nullptr, G4ThreeVector(0., 0., sampleCenterZ), sampleLogic, "Sample", phantomLogic, false, 0, fCheckOverlaps);
+  G4double capRadius = ComputeSampleEndCapRadius();
+  G4double capThickness = std::max(fConfig.sampleEndCapThickness, 0.25 * mm);
+  G4double capHalfThickness = capThickness / 2.0;
+  auto* sampleEndCapSolid = new G4Tubs("SampleEndCap", 0., capRadius, capHalfThickness, 0., 2. * pi);
+  auto* sampleEndCapLogic = new G4LogicalVolume(sampleEndCapSolid, sampleMat, "SampleEndCap");
+
+  G4double sampleCenterZ = -fConfig.phantomHalfZ + fConfig.sampleDepth + sampleShellHalfThickness;
+  new G4PVPlacement(BuildSampleRotation(), G4ThreeVector(0., 0., sampleCenterZ), sampleShellLogic, "SampleShell", phantomLogic, false, 0, fCheckOverlaps);
+  new G4PVPlacement(nullptr, G4ThreeVector(), sampleLogic, "Sample", sampleShellLogic, false, 0, fCheckOverlaps);
+  new G4PVPlacement(nullptr,
+                    G4ThreeVector(0., 0., sampleShellHalfThickness - capHalfThickness),
+                    sampleEndCapLogic,
+                    "SampleEndCap",
+                    sampleShellLogic,
+                    false,
+                    0,
+                    fCheckOverlaps);
 
   auto* sampleVis = new G4VisAttributes(G4Colour(0.9, 0.8, 0.3, 0.4));
   sampleVis->SetForceSolid(true);
   sampleLogic->SetVisAttributes(sampleVis);
+
+  auto* sampleEndCapVis = new G4VisAttributes(G4Colour(0.8, 0.2, 0.2, 0.8));
+  sampleEndCapVis->SetForceSolid(true);
+  sampleEndCapLogic->SetVisAttributes(sampleEndCapVis);
+
+  auto* sampleShellVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
+  sampleShellVis->SetForceSolid(true);
+  sampleShellLogic->SetVisAttributes(sampleShellVis);
 
   auto* phantomVis = new G4VisAttributes(G4Colour(0.2, 0.5, 1.0, 0.2));
   phantomVis->SetForceSolid(true);

@@ -2,6 +2,9 @@
 /sourceLab/geometry/sampleDepth 10 cm
 /sourceLab/geometry/sampleRadius 5 cm
 /sourceLab/geometry/sampleThickness 1 mm
+/sourceLab/geometry/sampleSkinThickness 0.25 mm
+/sourceLab/geometry/sampleEndCapArea 1 cm2
+/sourceLab/geometry/sampleEndCapThickness 0.25 mm
 
 # Allow nested /control/execute to resolve source macros in root or build workflows.
 /control/macroPath .:macros:../macros

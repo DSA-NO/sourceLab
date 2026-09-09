@@ -70,6 +70,20 @@ Use `-r on|off` to enable or disable radioactive decay physics. For example:
 ./scripts/run-micromamba.sh run -r on -b run.mac
 ```
 
+## Sample shell and end-cap tuning
+
+The source sample geometry uses a cylindrical shell with a dedicated end-cap scorer. The shell material is used for the wall, and the end cap is a separate thin `G4Tubs` sensitive volume that is scored independently from the shell body.
+
+Example geometry commands before `/run/initialize`:
+
+```tcl
+/sourceLab/geometry/sampleSkinThickness 0.25 mm
+/sourceLab/geometry/sampleEndCapArea 1 cm2
+/sourceLab/geometry/sampleEndCapThickness 0.25 mm
+```
+
+The end-cap radius is computed from the target area. If that radius would exceed the shell radius, the code falls back to half the shell radius for a safe, bounded cap volume.
+
 ## Output metadata and file naming
 
 sourceLab exposes output metadata commands under `/sourceLab/output/`.

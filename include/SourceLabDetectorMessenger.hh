@@ -1,6 +1,7 @@
 #ifndef SourceLabDetectorMessenger_h
 #define SourceLabDetectorMessenger_h 1
 
+#include "G4UIcmdWithAString.hh"
 #include "G4UImessenger.hh"
 
 class G4UIcmdWithADoubleAndUnit;
@@ -30,6 +31,10 @@ class SourceLabDetectorMessenger : public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fSetSampleDepthCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSampleRadiusCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSampleThicknessCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetSampleSkinThicknessCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetSampleEndCapAreaCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetSampleEndCapThicknessCmd = nullptr;
+    G4UIcmdWithAString* fSetSampleAxisCmd = nullptr;
 
     G4UIcommand* fUpdateCmd = nullptr;
     G4UIcommand* fPrintCmd = nullptr;
