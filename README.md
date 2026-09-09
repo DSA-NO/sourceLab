@@ -126,6 +126,19 @@ At end-of-run, output file write/close is finalized once in the safe context (se
 
 When radioactive decay is enabled (`-r on`), sourceLab globally applies a long-decay-time threshold (`/process/had/rdm/thresholdForVeryLongDecayTime 1e+60 year`) at run start so long-lived ions (for example Cs-137) can decay within simulated events.
 
+## Harmonized macro lifecycle and ownership
+
+The three labs follow a shared macro lifecycle even though each one emphasizes a slightly different startup style.
+
+1. Physical geometry setup comes first. Raw detector dimensions, materials, shell thickness, cut values, and axis/orientation are detector-owned state and belong in a dedicated detector messenger / construction layer.
+2. Scenario and placement setup comes next. depth, position, or preset commands are orchestration-level steps: they determine how the detector sits in context and keep output metadata consistent with the active run.
+3. Source setup follows. Source preset macros define only the particle identity and emission spectrum; they do not initialize the run or fire beamOn.
+4. Field setup follows. Field macros define beam size, direction, SSD, and the geometry of the irradiation pattern.
+5. Initialization happens once a complete scenario is assembled. `/run/initialize` freezes the geometry and source/field configuration for the run.
+6. Visualization, scoring, and execution happen after initialization. Viewer commands, scorers, and `/run/beamOn` are run only after the detector and source state have been established.
+
+This gives us the best of both patterns: doseLab keeps its modular scenario-first structure, while the newer labs remain simpler and easier to inspect in visual mode. The key rule is that raw geometry remains detector-owned, scenario/output metadata remains orchestration-owned, and source/field/scoring/vis remain native Geant4 subsystems.
+
 ## Cross-lab macro contract
 
 The three labs follow one shared macro structure contract so geometry differences do not fragment workflow conventions.
