@@ -82,6 +82,8 @@ Example geometry commands before `/run/initialize`:
 /sourceLab/geometry/sampleEndCapThickness 0.25 mm
 ```
 
+Use the canonical `/sourceLab/geometry/*` namespace for all new geometry examples and macros. This keeps the detector configuration consistent with the shared project convention and avoids mixing lab-specific legacy naming in example scripts.
+
 The end-cap radius is computed from the target area. If that radius would exceed the shell radius, the code falls back to half the shell radius for a safe, bounded cap volume.
 
 ## Output metadata and file naming
