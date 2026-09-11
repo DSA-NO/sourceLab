@@ -311,6 +311,7 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
 
   G4double sampleCenterZ = -fConfig.phantomHalfZ + fConfig.sampleDepth + sampleShellHalfThickness;
   new G4PVPlacement(BuildSampleRotation(), G4ThreeVector(0., 0., sampleCenterZ), sampleShellLogic, "SampleShell", phantomLogic, false, 0, fCheckOverlaps);
+  new G4PVPlacement(BuildSampleRotation(), G4ThreeVector(0., 0., -sampleCenterZ), sampleShellLogic, "SampleShellMirror", phantomLogic, false, 1, fCheckOverlaps);
   new G4PVPlacement(nullptr, G4ThreeVector(), sampleLogic, "Sample", sampleShellLogic, false, 0, fCheckOverlaps);
   new G4PVPlacement(nullptr,
                     G4ThreeVector(0., 0., sampleShellHalfThickness - capHalfThickness),
@@ -329,6 +330,8 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
                     0,
                     fCheckOverlaps);
 
+  worldLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
+
   auto* sampleVis = new G4VisAttributes(G4Colour(0.9, 0.8, 0.3, 0.4));
   sampleVis->SetForceSolid(true);
   sampleLogic->SetVisAttributes(sampleVis);
@@ -342,11 +345,13 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   sampleDepthLogic->SetVisAttributes(sampleDepthVis);
 
   auto* sampleShellVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
-  sampleShellVis->SetForceSolid(true);
+  sampleShellVis->SetForceSolid(false);
+  sampleShellVis->SetForceWireframe(true);
   sampleShellLogic->SetVisAttributes(sampleShellVis);
 
   auto* phantomVis = new G4VisAttributes(G4Colour(0.2, 0.5, 1.0, 0.2));
-  phantomVis->SetForceSolid(true);
+  phantomVis->SetForceSolid(false);
+  phantomVis->SetForceWireframe(true);
   phantomLogic->SetVisAttributes(phantomVis);
 
   return worldPhys;
