@@ -15,6 +15,14 @@ target_include_directories(sourceLab PRIVATE ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(sourceLab PRIVATE ${Geant4_LIBRARIES})
 target_compile_definitions(sourceLab PRIVATE SOURCELAB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(score_statistics_test tests/score_statistics.cc)
+  target_include_directories(score_statistics_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_link_libraries(score_statistics_test PRIVATE ${Geant4_LIBRARIES})
+  add_test(NAME score_statistics COMMAND score_statistics_test)
+endif()
+
 set(SOURCE_LAB_MACROS
   gui.mac
   init_vis.mac

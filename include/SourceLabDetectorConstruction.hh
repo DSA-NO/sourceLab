@@ -1,10 +1,11 @@
 #ifndef SourceLabDetectorConstruction_h
 #define SourceLabDetectorConstruction_h 1
 
-#include "G4RotationMatrix.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4VUserDetectorConstruction.hh"
 #include "globals.hh"
+
+#include <array>
 
 class G4VPhysicalVolume;
 
@@ -12,26 +13,22 @@ namespace SourceLab
 {
 class SourceLabDetectorMessenger;
 
-enum class SampleAxis
+constexpr std::size_t kWaterRegionCount = 6;
+
+struct WaterRegion
 {
-  kZ,
-  kX,
-  kY
+  G4double innerRadius = 0.;
+  G4double outerRadius = 0.;
+  G4double mass = 0.;
 };
 
 struct DetectorConfig
 {
-  G4double worldSize = 2.0 * m;
-  G4double phantomHalfX = 0.5 * m;
-  G4double phantomHalfY = 0.5 * m;
-  G4double phantomHalfZ = 0.5 * m;
-  G4double sampleDepth = 10.0 * cm;
-  G4double sampleRadius = 5.0 * cm;
-  G4double sampleThickness = 1.0 * mm;
-  G4double sampleSkinThickness = 0.25 * mm;
-  G4double sampleEndCapTargetArea = 1.0 * cm * 1.0 * cm;
-  G4double sampleEndCapThickness = 0.25 * mm;
-  SampleAxis sampleAxis = SampleAxis::kZ;
+  G4double worldSize = 30.0 * cm;
+  G4double phantomRadius = 4.0 * cm;
+  G4double phantomHeight = 5.0 * cm;
+  G4double sourceRadius = 2.375 * mm;
+  G4double sourceShellThickness = 0.8 * mm;
 };
 
 class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
@@ -47,24 +44,13 @@ class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
     DetectorConfig GetConfig() const;
 
     void SetWorldSize(G4double worldSize);
-    void SetPhantomHalfSize(G4double x, G4double y, G4double z);
-    void SetSampleDepth(G4double depth);
-    void SetSampleSize(G4double radius, G4double thickness);
-    void SetSampleSkinThickness(G4double thickness);
-    void SetSampleEndCapArea(G4double area);
-    void SetSampleEndCapThickness(G4double thickness);
-    void SetSampleAxis(const G4String& axisName);
+    void SetPhantomRadius(G4double radius);
+    void SetPhantomHeight(G4double height);
+    void SetSourceRadius(G4double radius);
+    void SetSourceShellThickness(G4double thickness);
 
     G4double GetWorldSize() const;
-    G4double GetSampleDepth() const;
-    G4double GetSampleRadius() const;
-    G4double GetSampleThickness() const;
-    G4double GetSampleSkinThickness() const;
-    G4double GetSampleEndCapArea() const;
-    G4double GetSampleEndCapThickness() const;
-    G4double ComputeSampleEndCapRadius() const;
-    G4String GetSampleAxis() const;
-    G4RotationMatrix* BuildSampleRotation() const;
+    const std::array<WaterRegion, kWaterRegionCount>& GetWaterRegions() const;
     void PrintConfig() const;
 
   private:
@@ -75,7 +61,7 @@ class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
     G4bool fCheckOverlaps = true;
 
     DetectorConfig fConfig;
-    G4LogicalVolume* fSampleLog = nullptr;
+    std::array<WaterRegion, kWaterRegionCount> fWaterRegions{};
 };
 
 }  // namespace SourceLab

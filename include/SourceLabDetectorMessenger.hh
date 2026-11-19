@@ -1,7 +1,6 @@
 #ifndef SourceLabDetectorMessenger_h
 #define SourceLabDetectorMessenger_h 1
 
-#include "G4UIcmdWithAString.hh"
 #include "G4UImessenger.hh"
 
 class G4UIcmdWithADoubleAndUnit;
@@ -23,18 +22,12 @@ class SourceLabDetectorMessenger : public G4UImessenger
   private:
     SourceLabDetectorConstruction* fDetector = nullptr;
 
-    // Generic geometry commands.
+    // Geometry commands.
     G4UIcmdWithADoubleAndUnit* fSetWorldSizeCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetPhantomHalfXCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetPhantomHalfYCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetPhantomHalfZCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleDepthCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleRadiusCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleThicknessCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleSkinThicknessCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleEndCapAreaCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetSampleEndCapThicknessCmd = nullptr;
-    G4UIcmdWithAString* fSetSampleAxisCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetPhantomRadiusCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetPhantomHeightCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetSourceRadiusCmd = nullptr;
+    G4UIcmdWithADoubleAndUnit* fSetSourceShellThicknessCmd = nullptr;
 
     G4UIcommand* fUpdateCmd = nullptr;
     G4UIcommand* fPrintCmd = nullptr;

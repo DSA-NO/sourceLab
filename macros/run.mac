@@ -1,20 +1,17 @@
-/sourceLab/geometry/worldSize 2.5 m
-/sourceLab/geometry/sampleDepth 10 cm
-/sourceLab/geometry/sampleRadius 5 cm
-/sourceLab/geometry/sampleThickness 1 mm
-/sourceLab/geometry/sampleSkinThickness 0.25 mm
-/sourceLab/geometry/sampleEndCapArea 1 cm2
-/sourceLab/geometry/sampleEndCapThickness 0.25 mm
-# The internal depth scorer sits 1 cm inside the sample body and uses the same radius/thickness as the end cap.
+/sourceLab/geometry/worldSize 30 cm
+/sourceLab/geometry/phantomRadius 4 cm
+/sourceLab/geometry/phantomHeight 5 cm
+/sourceLab/geometry/sourceRadius 2.375 mm
+/sourceLab/geometry/sourceShellThickness 0.8 mm
 
 # Allow nested /control/execute to resolve source macros in root or build workflows.
 /control/macroPath .:macros:../macros
 
 # Output metadata
 /sourceLab/output/tag run-simple
-/sourceLab/output/geometry waterbox
-/sourceLab/output/region sample
-/sourceLab/output/depth 10 cm
+/sourceLab/output/geometry water-annulus
+/sourceLab/output/region phantom
+/sourceLab/output/depth 0 cm
 
 /run/initialize
 
@@ -23,7 +20,7 @@
 
 # Reference beam placement and direction
 /gps/pos/type Point
-/gps/pos/centre 0 0 -0.75 m
+/gps/pos/centre 0 0 -10 cm
 /gps/ang/type iso
 
 /run/beamOn 100

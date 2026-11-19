@@ -25,9 +25,9 @@ class SourceLabEventAction : public G4UserEventAction
 
   private:
     SourceLabRunAction* fRunAction = nullptr;
-    G4int fSampleDoseCollectionID = -1;
-    G4int fSampleEdepCollectionID = -1;
-    G4int fSampleTrackLengthCollectionID = -1;
+    G4int fPhantomDoseCollectionID = -1;
+    G4int fPhantomEdepCollectionID = -1;
+    G4int fPhantomTrackLengthCollectionID = -1;
     G4double fEventDose = 0.0;
     G4double fEventEnergyDeposit = 0.0;
     G4double fEventTrackLength = 0.0;

@@ -6,11 +6,15 @@
 #include "G4UserRunAction.hh"
 #include "globals.hh"
 
+#include "SourceLabDetectorConstruction.hh"
+#include "ScoreStatistics.hh"
+
+#include <array>
 #include <memory>
 
 namespace SourceLab
 {
-class SourceLabDetectorConstruction;
+using WaterScores = std::array<G4double, kWaterRegionCount>;
 
 class SourceLabRunAction : public G4UserRunAction
 {
@@ -22,11 +26,14 @@ class SourceLabRunAction : public G4UserRunAction
 
     void BeginOfRunAction(const G4Run*) override;
     void EndOfRunAction(const G4Run*) override;
-    void AddEventScoring(G4double eventDose, G4double eventEnergyDeposit, G4double eventTrackLength);
+    void AddEventScoring(const WaterScores& doses, const WaterScores& energyDeposits,
+                         const WaterScores& trackLengths);
     G4double GetRunDose() const;
     G4double GetRunEnergyDeposit() const;
     G4double GetRunTrackLength() const;
-    G4int GetSampleNtupleId() const;
+    G4int GetPhantomNtupleId() const;
+    G4int GetWaterRegionNtupleId() const;
+    const std::array<WaterRegion, kWaterRegionCount>& GetWaterRegions() const;
 
   private:
     void ConfigureCommands();
@@ -42,16 +49,24 @@ class SourceLabRunAction : public G4UserRunAction
     G4Accumulable<G4double> fRunDose = 0.0;
     G4Accumulable<G4double> fRunEnergyDeposit = 0.0;
     G4Accumulable<G4double> fRunTrackLength = 0.0;
-    G4int fSampleNtupleId = -1;
+    std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionDoses{};
+    std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionEnergyDeposits{};
+    std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionTrackLengths{};
+    ScoreStatistics fScoreStatistics;
+    std::array<ScoreStatistics, kWaterRegionCount> fRegionStatistics{};
+    G4int fStatisticsNtupleId = -1;
+    G4int fPhantomNtupleId = -1;
     G4int fRunNtupleId = -1;
     G4int fRunInfoNtupleId = -1;
+    G4int fWaterRegionNtupleId = -1;
+    G4int fWaterRegionRunNtupleId = -1;
 
     std::unique_ptr<G4GenericMessenger> fMessenger;
     G4String fOutputTag = "default";
     G4String fOutputSource = "unspecified";
-    G4String fOutputGeometry = "source-stack";
-    G4String fOutputRegion = "sample";
-    G4double fOutputDepthCm = -1.;
+    G4String fOutputGeometry = "water-annulus";
+    G4String fOutputRegion = "phantom";
+    G4double fOutputDepthCm = 0.;
 };
 
 }  // namespace SourceLab

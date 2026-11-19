@@ -6,21 +6,19 @@
 # Keep nested macro resolution robust in both repo-root and build-directory runs.
 /control/macroPath .:macros:../macros
 
-# Minimal geometry setup for the sample shell and end-cap scorer.
-/sourceLab/geometry/worldSize 2.5 m
-/sourceLab/geometry/sampleDepth 10 cm
-/sourceLab/geometry/sampleRadius 5 cm
-/sourceLab/geometry/sampleThickness 1 mm
-/sourceLab/geometry/sampleSkinThickness 0.25 mm
-/sourceLab/geometry/sampleEndCapArea 1 cm2
-/sourceLab/geometry/sampleEndCapThickness 0.25 mm
+# Minimal geometry setup.
+/sourceLab/geometry/worldSize 30 cm
+/sourceLab/geometry/phantomRadius 4 cm
+/sourceLab/geometry/phantomHeight 5 cm
+/sourceLab/geometry/sourceRadius 2.375 mm
+/sourceLab/geometry/sourceShellThickness 0.8 mm
 
 # Output metadata for a quick smoke test.
 /sourceLab/output/tag run-simple
 /sourceLab/output/source co60
-/sourceLab/output/geometry waterbox
-/sourceLab/output/region sample
-/sourceLab/output/depth 10 cm
+/sourceLab/output/geometry water-annulus
+/sourceLab/output/region phantom
+/sourceLab/output/depth 0 cm
 
 /run/initialize
 
@@ -29,7 +27,7 @@
 
 # Simple beam setup.
 /gps/pos/type Point
-/gps/pos/centre 0 0 -0.75 m
+/gps/pos/centre 0 0 -10 cm
 /gps/ang/type iso
 
 /run/printProgress 20

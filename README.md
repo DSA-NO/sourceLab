@@ -77,21 +77,27 @@ Use `-r on|off` to enable or disable radioactive decay physics. For example:
 ./scripts/run-micromamba.sh run -r on -b run.mac
 ```
 
-## Sample shell and end-cap tuning
+## Source and phantom geometry
 
-The source sample geometry uses a cylindrical shell with a dedicated end-cap scorer. The shell material is used for the wall, and the end cap is a separate thin `G4Tubs` sensitive volume that is scored independently from the shell body.
+The default geometry is a 30 cm cubic `G4_AIR` world (density 0.00120479 g/cm3) containing three concentric, centered regions: a 5 cm tall metallic Cs-137 cylinder (radius 2.375 mm, density 1.873 g/cm3), an open-ended `G4_STAINLESS-STEEL` cylindrical wall (density 8 g/cm3, 0.8 mm radial thickness), and a `G4_WATER` annular phantom (density 1 g/cm3, outer radius 4 cm, height 5 cm). The Cs-137 material uses a single Cs-137 isotope. All three regions have the same height.
 
-Example geometry commands before `/run/initialize`:
+The dimensions can be set before `/run/initialize` through `/sourceLab/geometry/*`:
 
 ```tcl
-/sourceLab/geometry/sampleSkinThickness 0.25 mm
-/sourceLab/geometry/sampleEndCapArea 1 cm2
-/sourceLab/geometry/sampleEndCapThickness 0.25 mm
+/sourceLab/geometry/worldSize 30 cm
+/sourceLab/geometry/phantomRadius 4 cm
+/sourceLab/geometry/phantomHeight 5 cm
+/sourceLab/geometry/sourceRadius 2.375 mm
+/sourceLab/geometry/sourceShellThickness 0.8 mm
 ```
 
-Use the canonical `/sourceLab/geometry/*` namespace for all new geometry examples and macros. This keeps the detector configuration consistent with the shared project convention and avoids mixing lab-specific legacy naming in example scripts.
+Dose, energy deposit, and charged track length are scored in six contiguous water annuli. Regions 0, 2, and 4 are 0.07 mm thick: region 0 starts immediately outside the steel, and regions 2 and 4 are centered 10 mm and 30 mm outside the steel, respectively. Regions 1, 3, and 5 fill the gaps. All have the phantom height. The phantom outer radius must be greater than the outer edge of region 4; initialization rejects a geometry that cannot contain all six regions.
 
-The end-cap radius is computed from the target area. If that radius would exceed the shell radius, the code falls back to half the shell radius for a safe, bounded cap volume.
+The source, shell, and water annuli are separate sibling volumes in the air world. Each primitive dose scorer uses its annulus's water mass. The existing `phantom` event ntuple and `run` summary contain whole-water scores, with dose calculated as total water energy deposit divided by total water mass. At run end, the mass-weighted sum of the six region doses and the accumulated whole-water dose are checked against total water energy divided by total mass (relative tolerance `1e-10`, with exact agreement for zero); a mismatch is fatal. Both calculations use the same region hits, so this checks scoring normalization and aggregation rather than independently validating the geometry or physics.
+
+The `water_regions` ntuple contains six rows per event, with `EventId`, `ThreadId`, `Region` (copy numbers 0–5), `Dose`, `Edep`, and `TrackL`. The `water_region_run` ntuple has six rows per run in sequential mode or per worker in MT mode, with `ThreadId`, `Region`, `InnerRadiusMm`, `OuterRadiusMm`, `MassG`, `Dose`, `Edep`, and `TrackL`. Dose, energy, and track-length columns use Geant4 internal units, as in the existing ntuples. Sum each region's run scores across workers; region masses and radii are repeated, not additive. `/sourceLab/output/depth` remains metadata and defaults to `0 cm`.
+
+The `run-decay-cs137.mac` example places a Cs-137 ion at the center of the source cylinder; run it with `-r on` to enable radioactive decay.
 
 ## Output metadata and file naming
 
@@ -100,11 +106,11 @@ sourceLab exposes output metadata commands under `/sourceLab/output/`.
 Set metadata in a macro before `/run/beamOn`:
 
 ```tcl
-/sourceLab/output/tag co60-depth5
+/sourceLab/output/tag co60-cylinder
 /sourceLab/output/source co60
-/sourceLab/output/geometry waterbox
-/sourceLab/output/region sample
-/sourceLab/output/depth 5 cm
+/sourceLab/output/geometry water-annulus
+/sourceLab/output/region phantom
+/sourceLab/output/depth 0 cm
 ```
 
 Allowed source labels are: `unspecified`, `co60`, `cs137`, `6mv`, `10mv`.
@@ -128,10 +134,16 @@ The `runinfo` ntuple uses the standardized schema:
 - `RadioactiveDecay`
 - `Events`
 - `ThreadId`
+- `Geant4Version` (version used to build the application)
+- `RandomEngine` (engine used by the scoring thread)
 
 Policy: `runinfo` stores one row per run in sequential mode, and one row per worker in MT mode. Use `ThreadId` to identify worker provenance.
 
-At end-of-run, output file write/close is finalized once in the safe context (sequential run or master in MT). A concise "Run complete" summary line is printed with events, output file, and key metadata.
+Each `score_statistics` row describes one quantity (`Dose`, `Edep`, or charged `TrackL`) per worker, or the whole run in sequential mode. `Region` is -1 for whole water and 0–5 for the six annuli; columns are `ThreadId`, `Region`, `Quantity`, `Events`, `Mean`, `M2`, `StdDev`, and `StdErr`. Every event is included, including zero scores. `M2` is the sum of squared deviations from the mean; `StdDev = sqrt(M2/(Events-1))` is the sample standard deviation and `StdErr = StdDev/sqrt(Events)` estimates the uncertainty of the per-event mean for independent events. For fewer than two events, `StdDev` and `StdErr` are NaN. Scores use Geant4 internal units; `M2` uses their squares.
+
+For MT output, do not average worker standard deviations or errors. For each region and quantity, combine worker counts, means, and M2 using `N = sum(n_i)`, `mean = sum(n_i*mean_i)/N`, and `M2 = sum(M2_i + n_i*(mean_i-mean)^2)`, ignoring empty workers. Then calculate the run-level standard deviation and standard error as above. The console also prints the combined statistics. Whole-water event scores are summed before computing statistics, preserving correlations between regions. These are statistical uncertainties only, not systematic uncertainties or validation of the physics model. Seed selection and provenance are unchanged and are not recorded yet.
+
+At end-of-run, each worker writes its data for merging, and the master finalizes the output. A concise "Run complete" summary line is printed with events, output file, and key metadata.
 
 When radioactive decay is enabled (`-r on`), sourceLab globally applies a long-decay-time threshold (`/process/had/rdm/thresholdForVeryLongDecayTime 1e+60 year`) at run start so long-lived ions (for example Cs-137) can decay within simulated events.
 
@@ -246,7 +258,7 @@ Run metadata contract (runinfo):
 - `SlabStepMm`
 - `SlabMinGapMm`
 
-These are in addition to the shared runinfo fields already used across labs (`Tag`, `Source`, `Geometry`, `Region`, `DepthCm`, `EMModel`, `RadioactiveDecay`, `Events`, `ThreadId`).
+These are in addition to the shared runinfo fields already used across labs (`Tag`, `Source`, `Geometry`, `Region`, `DepthCm`, `EMModel`, `RadioactiveDecay`, `Events`, `ThreadId`, `Geant4Version`, `RandomEngine`).
 
 ## AI Usage
 

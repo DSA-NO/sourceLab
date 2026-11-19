@@ -4,40 +4,41 @@
 
 #include "G4AnalysisManager.hh"
 #include "G4Event.hh"
+#include "G4Exception.hh"
 #include "G4SDManager.hh"
 #include "G4THitsMap.hh"
+#include "G4Threading.hh"
 #include "G4VHitsCollection.hh"
+
+#include <numeric>
 
 namespace SourceLab
 {
 namespace
 {
-G4double GetHitsMapSum(const G4Event* event, G4int collectionId)
+WaterScores GetRegionScores(const G4Event* event, G4int collectionId)
 {
-  if (collectionId < 0) {
-    return 0.0;
-  }
-
   auto* hce = event->GetHCofThisEvent();
-  if (!hce || collectionId >= hce->GetNumberOfCollections()) {
-    return 0.0;
-  }
-
-  auto* hc = hce->GetHC(collectionId);
-  if (!hc) {
-    return 0.0;
-  }
-
-  auto* hitsMap = dynamic_cast<G4THitsMap<G4double>*>(hc);
+  auto* hitsMap = collectionId >= 0 && hce && static_cast<std::size_t>(collectionId) < hce->GetCapacity()
+    ? dynamic_cast<G4THitsMap<G4double>*>(hce->GetHC(collectionId)) : nullptr;
   if (!hitsMap) {
-    return 0.0;
+    G4ExceptionDescription message;
+    message << "Missing or invalid phantom scoring collection " << collectionId << ".";
+    G4Exception("SourceLabEventAction::GetRegionScores", "SourceLabScoring001", FatalException, message);
+    return {};
   }
 
-  G4double sum = 0.0;
+  WaterScores scores{};
   for (auto const& hit : *hitsMap->GetMap()) {
-    sum += *(hit.second);
+    if (hit.first < 0 || static_cast<std::size_t>(hit.first) >= scores.size() || !hit.second) {
+      G4ExceptionDescription message;
+      message << "Invalid phantom scoring copy number " << hit.first << ".";
+      G4Exception("SourceLabEventAction::GetRegionScores", "SourceLabScoring002", FatalException, message);
+      return {};
+    }
+    scores[hit.first] += *hit.second;
   }
-  return sum;
+  return scores;
 }
 }
 
@@ -75,34 +76,56 @@ void SourceLabEventAction::BeginOfEventAction(const G4Event*)
 
 void SourceLabEventAction::EndOfEventAction(const G4Event* anEvent)
 {
-  if (fSampleDoseCollectionID < 0) {
-    fSampleDoseCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Sample/Dose");
+  if (fPhantomDoseCollectionID < 0) {
+    fPhantomDoseCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Phantom/Dose");
   }
-  if (fSampleEdepCollectionID < 0) {
-    fSampleEdepCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Sample/Edep");
+  if (fPhantomEdepCollectionID < 0) {
+    fPhantomEdepCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Phantom/Edep");
   }
-  if (fSampleTrackLengthCollectionID < 0) {
-    fSampleTrackLengthCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Sample/TrackL");
+  if (fPhantomTrackLengthCollectionID < 0) {
+    fPhantomTrackLengthCollectionID = G4SDManager::GetSDMpointer()->GetCollectionID("Phantom/TrackL");
   }
 
-  fEventDose = GetHitsMapSum(anEvent, fSampleDoseCollectionID);
-  fEventEnergyDeposit = GetHitsMapSum(anEvent, fSampleEdepCollectionID);
-  fEventTrackLength = GetHitsMapSum(anEvent, fSampleTrackLengthCollectionID);
-
-  if (fRunAction) {
-    fRunAction->AddEventScoring(fEventDose, fEventEnergyDeposit, fEventTrackLength);
+  const auto doses = GetRegionScores(anEvent, fPhantomDoseCollectionID);
+  const auto energyDeposits = GetRegionScores(anEvent, fPhantomEdepCollectionID);
+  const auto trackLengths = GetRegionScores(anEvent, fPhantomTrackLengthCollectionID);
+  if (!fRunAction) {
+    G4Exception("SourceLabEventAction::EndOfEventAction", "SourceLabScoring003", FatalException,
+                "A run action is required for phantom scoring.");
+    return;
   }
+
+  const auto& regions = fRunAction->GetWaterRegions();
+  G4double totalMass = 0.;
+  for (const auto& region : regions) {
+    totalMass += region.mass;
+  }
+  fEventEnergyDeposit = std::accumulate(energyDeposits.begin(), energyDeposits.end(), 0.);
+  fEventTrackLength = std::accumulate(trackLengths.begin(), trackLengths.end(), 0.);
+  fEventDose = fEventEnergyDeposit / totalMass;
+  fRunAction->AddEventScoring(doses, energyDeposits, trackLengths);
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->FillH1(0, fEventDose);
   analysisManager->FillH1(1, fEventEnergyDeposit);
   analysisManager->FillH1(2, fEventTrackLength);
-  const auto sampleNtupleId = fRunAction ? fRunAction->GetSampleNtupleId() : -1;
-  if (sampleNtupleId >= 0) {
-    analysisManager->FillNtupleDColumn(sampleNtupleId, 0, fEventDose);
-    analysisManager->FillNtupleDColumn(sampleNtupleId, 1, fEventEnergyDeposit);
-    analysisManager->FillNtupleDColumn(sampleNtupleId, 2, fEventTrackLength);
-    analysisManager->AddNtupleRow(sampleNtupleId);
+  const auto phantomNtupleId = fRunAction ? fRunAction->GetPhantomNtupleId() : -1;
+  if (phantomNtupleId >= 0) {
+    analysisManager->FillNtupleDColumn(phantomNtupleId, 0, fEventDose);
+    analysisManager->FillNtupleDColumn(phantomNtupleId, 1, fEventEnergyDeposit);
+    analysisManager->FillNtupleDColumn(phantomNtupleId, 2, fEventTrackLength);
+    analysisManager->AddNtupleRow(phantomNtupleId);
+  }
+
+  const auto regionNtupleId = fRunAction->GetWaterRegionNtupleId();
+  for (std::size_t i = 0; i < kWaterRegionCount; ++i) {
+    analysisManager->FillNtupleIColumn(regionNtupleId, 0, anEvent->GetEventID());
+    analysisManager->FillNtupleIColumn(regionNtupleId, 1, G4Threading::G4GetThreadId());
+    analysisManager->FillNtupleIColumn(regionNtupleId, 2, static_cast<G4int>(i));
+    analysisManager->FillNtupleDColumn(regionNtupleId, 3, doses[i]);
+    analysisManager->FillNtupleDColumn(regionNtupleId, 4, energyDeposits[i]);
+    analysisManager->FillNtupleDColumn(regionNtupleId, 5, trackLengths[i]);
+    analysisManager->AddNtupleRow(regionNtupleId);
   }
 }
 
