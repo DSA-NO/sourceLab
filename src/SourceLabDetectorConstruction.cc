@@ -24,6 +24,11 @@
 
 namespace SourceLab
 {
+namespace
+{
+const G4double kLayerThickness = 0.07 * mm;
+const G4double kOuterLayerDepth = 30. * mm;
+}
 
 SourceLabDetectorConstruction::SourceLabDetectorConstruction()
 {
@@ -93,13 +98,6 @@ void SourceLabDetectorConstruction::SetWorldSize(G4double worldSize)
   }
 }
 
-void SourceLabDetectorConstruction::SetPhantomRadius(G4double radius)
-{
-  if (radius > 0.) {
-    fConfig.phantomRadius = radius;
-  }
-}
-
 void SourceLabDetectorConstruction::SetPhantomHeight(G4double height)
 {
   if (height > 0.) {
@@ -135,7 +133,9 @@ void SourceLabDetectorConstruction::PrintConfig() const
 {
   G4cout << "SourceLab detector configuration:" << G4endl;
   G4cout << "  worldSize = " << fConfig.worldSize / cm << " cm" << G4endl;
-  G4cout << "  phantomRadius = " << fConfig.phantomRadius / cm << " cm" << G4endl;
+  G4cout << "  phantomRadius = "
+         << (fConfig.sourceRadius + fConfig.sourceShellThickness + kOuterLayerDepth + kLayerThickness / 2.) / cm
+         << " cm" << G4endl;
   G4cout << "  phantomHeight = " << fConfig.phantomHeight / cm << " cm" << G4endl;
   G4cout << "  sourceRadius = " << fConfig.sourceRadius / mm << " mm" << G4endl;
   G4cout << "  sourceHeight = " << fConfig.phantomHeight / cm << " cm" << G4endl;
@@ -150,27 +150,22 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* shellMat = G4Material::GetMaterial("G4_STAINLESS-STEEL");
 
   const G4double shellOuterRadius = fConfig.sourceRadius + fConfig.sourceShellThickness;
-  const G4double layerThickness = 0.07 * mm;
   const std::array<G4double, kWaterRegionCount + 1> boundaries = {
     shellOuterRadius,
-    shellOuterRadius + layerThickness,
-    shellOuterRadius + 10. * mm - layerThickness / 2.,
-    shellOuterRadius + 10. * mm + layerThickness / 2.,
-    shellOuterRadius + 30. * mm - layerThickness / 2.,
-    shellOuterRadius + 30. * mm + layerThickness / 2.,
-    fConfig.phantomRadius
+    shellOuterRadius + kLayerThickness,
+    shellOuterRadius + 10. * mm - kLayerThickness / 2.,
+    shellOuterRadius + 10. * mm + kLayerThickness / 2.,
+    shellOuterRadius + kOuterLayerDepth - kLayerThickness / 2.,
+    shellOuterRadius + kOuterLayerDepth + kLayerThickness / 2.
   };
   if (fConfig.worldSize <= 0.
-      || fConfig.phantomRadius <= 0.
       || fConfig.phantomHeight <= 0.
       || fConfig.sourceRadius <= 0.
       || fConfig.sourceShellThickness <= 0.
-      || boundaries[5] >= fConfig.phantomRadius
-      || 2.0 * fConfig.phantomRadius > fConfig.worldSize
+      || 2.0 * boundaries.back() > fConfig.worldSize
       || fConfig.phantomHeight > fConfig.worldSize) {
     G4ExceptionDescription message;
-    message << "Geometry dimensions must be positive, the 30 mm scoring layer must fit inside "
-            << "the phantom, and the phantom must fit inside the world.";
+    message << "Geometry dimensions must be positive, and the phantom must fit inside the world.";
     G4Exception("SourceLabDetectorConstruction::DefineVolumes", "SourceLabGeometry001", FatalException, message);
     return nullptr;
   }

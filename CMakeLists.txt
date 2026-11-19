@@ -21,6 +21,14 @@ if(BUILD_TESTING)
   target_include_directories(score_statistics_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
   target_link_libraries(score_statistics_test PRIVATE ${Geant4_LIBRARIES})
   add_test(NAME score_statistics COMMAND score_statistics_test)
+  add_executable(water_geometry_test
+    tests/water_geometry.cc
+    src/SourceLabDetectorConstruction.cc
+    src/SourceLabDetectorMessenger.cc)
+  target_include_directories(water_geometry_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+  target_link_libraries(water_geometry_test PRIVATE ${Geant4_LIBRARIES})
+  add_test(NAME water_geometry_default COMMAND water_geometry_test)
+  add_test(NAME water_geometry_custom COMMAND water_geometry_test custom)
   add_test(NAME cs137_source_distribution
     COMMAND ${CMAKE_COMMAND}
       "-DAPP=$<TARGET_FILE:sourceLab>"

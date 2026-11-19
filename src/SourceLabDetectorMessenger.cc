@@ -21,11 +21,6 @@ SourceLabDetectorMessenger::SourceLabDetectorMessenger(SourceLabDetectorConstruc
   fSetWorldSizeCmd->SetParameterName("size", false);
   fSetWorldSizeCmd->SetDefaultUnit("cm");
 
-  fSetPhantomRadiusCmd = new G4UIcmdWithADoubleAndUnit("/sourceLab/geometry/phantomRadius", this);
-  fSetPhantomRadiusCmd->SetGuidance("Set the water phantom radius");
-  fSetPhantomRadiusCmd->SetParameterName("radius", false);
-  fSetPhantomRadiusCmd->SetDefaultUnit("cm");
-
   fSetPhantomHeightCmd = new G4UIcmdWithADoubleAndUnit("/sourceLab/geometry/phantomHeight", this);
   fSetPhantomHeightCmd->SetGuidance("Set the water phantom height");
   fSetPhantomHeightCmd->SetParameterName("height", false);
@@ -52,7 +47,6 @@ SourceLabDetectorMessenger::SourceLabDetectorMessenger(SourceLabDetectorConstruc
 SourceLabDetectorMessenger::~SourceLabDetectorMessenger()
 {
   delete fSetWorldSizeCmd;
-  delete fSetPhantomRadiusCmd;
   delete fSetPhantomHeightCmd;
   delete fSetSourceRadiusCmd;
   delete fSetSourceShellThicknessCmd;
@@ -64,9 +58,6 @@ void SourceLabDetectorMessenger::SetNewValue(G4UIcommand* command, G4String newV
 {
   if (command == fSetWorldSizeCmd) {
     fDetector->SetWorldSize(fSetWorldSizeCmd->GetNewDoubleValue(newValue));
-  }
-  else if (command == fSetPhantomRadiusCmd) {
-    fDetector->SetPhantomRadius(fSetPhantomRadiusCmd->GetNewDoubleValue(newValue));
   }
   else if (command == fSetPhantomHeightCmd) {
     fDetector->SetPhantomHeight(fSetPhantomHeightCmd->GetNewDoubleValue(newValue));
@@ -91,9 +82,6 @@ G4String SourceLabDetectorMessenger::GetCurrentValue(G4UIcommand* command)
     return G4UIcommand::ConvertToString(fDetector->GetWorldSize(), "cm");
   }
   const auto config = fDetector->GetConfig();
-  if (command == fSetPhantomRadiusCmd) {
-    return G4UIcommand::ConvertToString(config.phantomRadius, "cm");
-  }
   if (command == fSetPhantomHeightCmd) {
     return G4UIcommand::ConvertToString(config.phantomHeight, "cm");
   }

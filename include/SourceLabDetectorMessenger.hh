@@ -24,7 +24,6 @@ class SourceLabDetectorMessenger : public G4UImessenger
 
     // Geometry commands.
     G4UIcmdWithADoubleAndUnit* fSetWorldSizeCmd = nullptr;
-    G4UIcmdWithADoubleAndUnit* fSetPhantomRadiusCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetPhantomHeightCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSourceRadiusCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSourceShellThicknessCmd = nullptr;

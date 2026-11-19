@@ -13,7 +13,7 @@ namespace SourceLab
 {
 class SourceLabDetectorMessenger;
 
-constexpr std::size_t kWaterRegionCount = 6;
+constexpr std::size_t kWaterRegionCount = 5;
 
 struct WaterRegion
 {
@@ -25,7 +25,6 @@ struct WaterRegion
 struct DetectorConfig
 {
   G4double worldSize = 30.0 * cm;
-  G4double phantomRadius = 4.0 * cm;
   G4double phantomHeight = 5.0 * cm;
   G4double sourceRadius = 2.375 * mm;
   G4double sourceShellThickness = 0.8 * mm;
@@ -44,7 +43,6 @@ class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
     DetectorConfig GetConfig() const;
 
     void SetWorldSize(G4double worldSize);
-    void SetPhantomRadius(G4double radius);
     void SetPhantomHeight(G4double height);
     void SetSourceRadius(G4double radius);
     void SetSourceShellThickness(G4double thickness);

@@ -2,7 +2,6 @@
 # Use with: sourceLab -r on -b macros/run-decay-cs137.mac
 
 /sourceLab/geometry/worldSize 30 cm
-/sourceLab/geometry/phantomRadius 4 cm
 /sourceLab/geometry/phantomHeight 5 cm
 /sourceLab/geometry/sourceRadius 2.375 mm
 /sourceLab/geometry/sourceShellThickness 0.8 mm
