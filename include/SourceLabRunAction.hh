@@ -7,7 +7,7 @@
 #include "globals.hh"
 
 #include "SourceLabDetectorConstruction.hh"
-#include "ScoreStatistics.hh"
+#include "SourceLabScoreStatistics.hh"
 
 #include <array>
 #include <memory>
@@ -52,8 +52,8 @@ class SourceLabRunAction : public G4UserRunAction
     std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionDoses{};
     std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionEnergyDeposits{};
     std::array<G4Accumulable<G4double>, kWaterRegionCount> fRegionTrackLengths{};
-    ScoreStatistics fScoreStatistics;
-    std::array<ScoreStatistics, kWaterRegionCount> fRegionStatistics{};
+    SourceLabScoreStatistics fScoreStatistics;
+    std::array<SourceLabScoreStatistics, kWaterRegionCount> fRegionStatistics{};
     G4int fStatisticsNtupleId = -1;
     G4int fPhantomNtupleId = -1;
     G4int fRunNtupleId = -1;

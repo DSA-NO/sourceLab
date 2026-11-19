@@ -1,4 +1,4 @@
-#include "ScoreStatistics.hh"
+#include "SourceLabScoreStatistics.hh"
 
 #include <cmath>
 #include <stdexcept>
@@ -13,7 +13,7 @@ bool Close(double a, double b) { return std::abs(a - b) < 1.e-12; }
 
 int main()
 {
-  ScoreStatistics left, right, empty;
+  SourceLab::SourceLabScoreStatistics left, right, empty;
   Check(std::isnan(left.StdDev(0)));
   left.Add(0., 0., 0.);
   Check(std::isnan(left.StdDev(0)));

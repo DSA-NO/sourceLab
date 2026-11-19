@@ -264,3 +264,9 @@ These are in addition to the shared runinfo fields already used across labs (`Ta
 
 AI-assisted development is used in this project.
 All commits are reviewed by humans.
+
+## Acknowledgements
+
+- This repository is released under the MIT License. See LICENSE.
+- This project uses Geant4 and follows the Geant4 license terms: http://cern.ch/geant4/license
+- Parts of this code and documentation workflow were developed with assistance from GitHub Copilot in VS Code.

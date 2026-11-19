@@ -151,7 +151,7 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->CreateNtupleDColumn("Edep");
   analysisManager->CreateNtupleDColumn("TrackL");
   analysisManager->FinishNtuple(fWaterRegionRunNtupleId);
-  fStatisticsNtupleId = ScoreStatistics::CreateNtuple();
+  fStatisticsNtupleId = SourceLabScoreStatistics::CreateNtuple();
 }
 
 void SourceLabRunAction::ConfigureCommands()
