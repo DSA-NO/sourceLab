@@ -97,7 +97,7 @@ The source, shell, and water annuli are separate sibling volumes in the air worl
 
 The `water_regions` ntuple contains six rows per event, with `EventId`, `ThreadId`, `Region` (copy numbers 0–5), `Dose`, `Edep`, and `TrackL`. The `water_region_run` ntuple has six rows per run in sequential mode or per worker in MT mode, with `ThreadId`, `Region`, `InnerRadiusMm`, `OuterRadiusMm`, `MassG`, `Dose`, `Edep`, and `TrackL`. Dose, energy, and track-length columns use Geant4 internal units, as in the existing ntuples. Sum each region's run scores across workers; region masses and radii are repeated, not additive. `/sourceLab/output/depth` remains metadata and defaults to `0 cm`.
 
-The `run-decay-cs137.mac` example places a Cs-137 ion at the center of the source cylinder; run it with `-r on` to enable radioactive decay.
+The `run-decay-cs137.mac` example samples Cs-137 ions uniformly throughout the inner source cylinder; run it with `-r on` to enable radioactive decay. Its GPS radius and half-height match the geometry dimensions set in that macro. If those dimensions are edited, update the GPS radius and half-height to match.
 
 ## Output metadata and file naming
 
@@ -115,6 +115,7 @@ Set metadata in a macro before `/run/beamOn`:
 
 Allowed source labels are: `unspecified`, `co60`, `cs137`, `6mv`, `10mv`.
 Legacy aliases like `linac-6mv`, `linac-10mv`, `cs-137`, and `cobalt-60` are accepted and canonicalized.
+The MV labels are retained for metadata compatibility; sourceLab does not provide MV source preset macros.
 
 Output file naming:
 
@@ -185,11 +186,9 @@ Source composition contract:
 - source preset macros must not call `/run/initialize` or `/run/beamOn`
 - optional compatibility alias macro is `source.mac`
 
-Shared source preset catalog (required naming):
+Available source presets:
 
 - `source-co60.mac`
-- `source-6mv.mac`
-- `source-10mv.mac`
 - `source.mac` (alias macro pointing to the default preset for quick runs)
 
 Decay-enabled example preset:

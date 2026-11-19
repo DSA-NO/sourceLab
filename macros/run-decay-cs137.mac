@@ -17,8 +17,11 @@
 
 /control/execute source-cs137.mac
 
-/gps/pos/type Point
+/gps/pos/type Volume
+/gps/pos/shape Cylinder
 /gps/pos/centre 0 0 0 cm
+/gps/pos/radius 2.375 mm
+/gps/pos/halfz 2.5 cm
 /gps/ang/type iso
 
 /run/printProgress 20
