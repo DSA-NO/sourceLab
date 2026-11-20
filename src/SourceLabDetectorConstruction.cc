@@ -174,19 +174,6 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* worldLogic = new G4LogicalVolume(worldSolid, worldMat, "World");
   auto* worldPhys = new G4PVPlacement(nullptr, G4ThreeVector(), worldLogic, "World", nullptr, false, 0, fCheckOverlaps);
 
-  auto* phantomVis = new G4VisAttributes(G4Colour(0.2, 0.5, 1.0, 0.2));
-  phantomVis->SetForceWireframe(true);
-  auto* layerVis = new G4VisAttributes(G4Colour(0.2, 0.8, 0.4, 0.6));
-  layerVis->SetForceSolid(true);
-  for (std::size_t i = 0; i < kWaterRegionCount; ++i) {
-    const auto name = "Phantom" + std::to_string(i);
-    auto* solid = new G4Tubs(name, boundaries[i], boundaries[i + 1], fConfig.phantomHeight / 2.0, 0., twopi);
-    auto* logic = new G4LogicalVolume(solid, phantomMat, name);
-    new G4PVPlacement(nullptr, G4ThreeVector(), logic, name, worldLogic, false, static_cast<G4int>(i), fCheckOverlaps);
-    logic->SetVisAttributes(i % 2 == 0 ? layerVis : phantomVis);
-    fWaterRegions[i] = {boundaries[i], boundaries[i + 1], solid->GetCubicVolume() * phantomMat->GetDensity()};
-  }
-
   auto* sourceSolid = new G4Tubs("Source", 0., fConfig.sourceRadius, fConfig.phantomHeight / 2.0, 0., twopi);
   auto* sourceLogic = new G4LogicalVolume(sourceSolid, sourceMat, "Source");
   new G4PVPlacement(nullptr, G4ThreeVector(), sourceLogic, "Source", worldLogic, false, 0, fCheckOverlaps);
@@ -200,6 +187,16 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* sourceShellLogic = new G4LogicalVolume(sourceShellSolid, shellMat, "SourceShell");
   new G4PVPlacement(nullptr, G4ThreeVector(), sourceShellLogic, "SourceShell", worldLogic, false, 0, fCheckOverlaps);
 
+  std::array<G4LogicalVolume*, kWaterRegionCount> phantomLogic{};
+  for (std::size_t i = 0; i < kWaterRegionCount; ++i) {
+    const auto name = "Phantom" + std::to_string(i);
+    auto* solid = new G4Tubs(name, boundaries[i], boundaries[i + 1], fConfig.phantomHeight / 2.0, 0., twopi);
+    phantomLogic[i] = new G4LogicalVolume(solid, phantomMat, name);
+    new G4PVPlacement(nullptr, G4ThreeVector(), phantomLogic[i], name, worldLogic, false,
+                      static_cast<G4int>(i), fCheckOverlaps);
+    fWaterRegions[i] = {boundaries[i], boundaries[i + 1], solid->GetCubicVolume() * phantomMat->GetDensity()};
+  }
+
   worldLogic->SetVisAttributes(G4VisAttributes::GetInvisible());
 
   auto* sourceVis = new G4VisAttributes(G4Colour(0.9, 0.75, 0.25, 0.8));
@@ -209,6 +206,14 @@ G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
   auto* sourceShellVis = new G4VisAttributes(G4Colour(0.55, 0.58, 0.62, 0.55));
   sourceShellVis->SetForceSolid(true);
   sourceShellLogic->SetVisAttributes(sourceShellVis);
+
+  auto* phantomVis = new G4VisAttributes(G4Colour(0.2, 0.5, 1.0, 0.2));
+  phantomVis->SetForceWireframe(true);
+  auto* layerVis = new G4VisAttributes(G4Colour(0.2, 0.8, 0.4, 0.6));
+  layerVis->SetForceSolid(true);
+  for (std::size_t i = 0; i < kWaterRegionCount; ++i) {
+    phantomLogic[i]->SetVisAttributes(i % 2 == 0 ? layerVis : phantomVis);
+  }
 
   return worldPhys;
 }
