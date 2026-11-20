@@ -3,12 +3,13 @@ foreach(macro source-cs137.mac source.mac position-cs137-cylinder.mac)
   configure_file("${SOURCE_DIR}/macros/${macro}" "${TEST_DIR}/${macro}" COPYONLY)
 endforeach()
 
-foreach(macro run.mac run-simple.mac run-decay-cs137.mac vis-simple.mac init_vis.mac)
+foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.mac vis-simple.mac init_vis.mac)
   file(READ "${SOURCE_DIR}/macros/${macro}" content)
   # Exercise the visualization macros' source setup without requiring a display.
   string(REPLACE "/vis/open OGL\n" "" content "${content}")
   string(REPLACE "/control/execute vis.mac\n" "" content "${content}")
   string(REPLACE "/run/beamOn 5\n" "/run/beamOn 100\n" content "${content}")
+  string(REPLACE "/run/beamOn 1000000\n" "/run/beamOn 100\n" content "${content}")
   if(macro STREQUAL "init_vis.mac")
     string(APPEND content "\n/run/beamOn 100\n")
   endif()
@@ -24,6 +25,10 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac vis-simple.mac init_vis
   endif()
   if(NOT output MATCHES "Run complete:.*source=cs137.*decay=on")
     message(FATAL_ERROR "${macro}: expected Cs-137 metadata and radioactive decay enabled")
+  endif()
+  if(macro STREQUAL "run-cs137-statistics.mac"
+      AND NOT output MATCHES "file=sourceLab-cs137-statistics-1m.root")
+    message(FATAL_ERROR "${macro}: expected its dedicated output file")
   endif()
 
   set(expected 100)

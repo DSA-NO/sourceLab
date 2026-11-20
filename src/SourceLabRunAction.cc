@@ -130,6 +130,7 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->CreateNtupleIColumn("ThreadId");
   analysisManager->CreateNtupleSColumn("Geant4Version");
   analysisManager->CreateNtupleSColumn("RandomEngine");
+  analysisManager->CreateNtupleSColumn("RandomState");
   analysisManager->FinishNtuple(fRunInfoNtupleId);
 
   fWaterRegionNtupleId = analysisManager->CreateNtuple("water_regions", "Per-event water region scores");
@@ -349,6 +350,7 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     analysisManager->FillNtupleIColumn(fRunInfoNtupleId, 8, G4Threading::G4GetThreadId());
     analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 9, G4Version);
     analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 10, G4Random::getTheEngine()->name());
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 11, run->GetRandomNumberStatus());
     analysisManager->AddNtupleRow(fRunInfoNtupleId);
   }
   if (writeRunRow) {

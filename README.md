@@ -54,6 +54,14 @@ There are also simple smoke-test macro examples:
 ./scripts/run-micromamba.sh run -v vis-simple.mac
 ```
 
+For a higher-statistics Cs-137 run, use the one-million-event macro:
+
+```bash
+./scripts/run-micromamba.sh run -t 16 -b run-cs137-statistics.mac
+```
+
+It writes `sourceLab-cs137-statistics-1m.root` and records per-event scores and statistical summaries. Adjust `/run/beamOn` in `macros/run-cs137-statistics.mac` to change the event count. One million events is a starting point, not a guarantee of adequate precision; check the reported standard errors for the quantity and regions you care about. Large runs produce correspondingly larger ROOT files.
+
 The default batch and visual macros configure Cs-137 ions at rest, sampled uniformly throughout the Cs-137 cylinder:
 
 - `macros/source-cs137.mac`: Cs-137 identity and energy
@@ -137,12 +145,13 @@ The `runinfo` ntuple uses the standardized schema:
 - `ThreadId`
 - `Geant4Version` (version used to build the application)
 - `RandomEngine` (engine used by the scoring thread)
+- `RandomState` (Geant4 serialized engine state at the beginning of that run or worker run)
 
 Policy: `runinfo` stores one row per run in sequential mode, and one row per worker in MT mode. Use `ThreadId` to identify worker provenance.
 
 Each `score_statistics` row describes one quantity (`Dose`, `Edep`, or charged `TrackL`) per worker, or the whole run in sequential mode. `Region` is -1 for whole water and 0–4 for the five annuli; columns are `ThreadId`, `Region`, `Quantity`, `Events`, `Mean`, `M2`, `StdDev`, and `StdErr`. Every event is included, including zero scores. `M2` is the sum of squared deviations from the mean; `StdDev = sqrt(M2/(Events-1))` is the sample standard deviation and `StdErr = StdDev/sqrt(Events)` estimates the uncertainty of the per-event mean for independent events. For fewer than two events, `StdDev` and `StdErr` are NaN. Scores use Geant4 internal units; `M2` uses their squares.
 
-For MT output, do not average worker standard deviations or errors. For each region and quantity, combine worker counts, means, and M2 using `N = sum(n_i)`, `mean = sum(n_i*mean_i)/N`, and `M2 = sum(M2_i + n_i*(mean_i-mean)^2)`, ignoring empty workers. Then calculate the run-level standard deviation and standard error as above. The console also prints the combined statistics. Whole-water event scores are summed before computing statistics, preserving correlations between regions. These are statistical uncertainties only, not systematic uncertainties or validation of the physics model. Seed selection and provenance are unchanged and are not recorded yet.
+For MT output, do not average worker standard deviations or errors. For each region and quantity, combine worker counts, means, and M2 using `N = sum(n_i)`, `mean = sum(n_i*mean_i)/N`, and `M2 = sum(M2_i + n_i*(mean_i-mean)^2)`, ignoring empty workers. Then calculate the run-level standard deviation and standard error as above. The console also prints the combined statistics. Whole-water event scores are summed before computing statistics, preserving correlations between regions. These are statistical uncertainties only, not systematic uncertainties or validation of the physics model. `RandomState` records Geant4's serialized engine state at the beginning of each sequential run or MT worker run, providing random-state provenance. It is not a per-event seed log, so it does not by itself guarantee exact replay of a multithreaded run. Run configuration, Geant4/CLHEP versions, thread count, and event scheduling can also affect reproducibility.
 
 At end-of-run, each worker writes its data for merging, and the master finalizes the output. A concise "Run complete" summary line is printed with events, output file, and key metadata.
 
@@ -254,7 +263,7 @@ Run metadata contract (runinfo):
 - `SlabStepMm`
 - `SlabMinGapMm`
 
-These are in addition to the shared runinfo fields already used across labs (`Tag`, `Source`, `Geometry`, `Region`, `DepthCm`, `EMModel`, `RadioactiveDecay`, `Events`, `ThreadId`, `Geant4Version`, `RandomEngine`).
+These are in addition to the sourceLab runinfo fields (`Tag`, `Source`, `Geometry`, `Region`, `DepthCm`, `EMModel`, `RadioactiveDecay`, `Events`, `ThreadId`, `Geant4Version`, `RandomEngine`, `RandomState`).
 
 ## AI Usage
 
