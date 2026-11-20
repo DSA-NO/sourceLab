@@ -15,11 +15,7 @@
 /run/initialize
 
 # Source composition pattern (shared style with doseLab)
-/control/execute source-co60.mac
-
-# Reference beam placement and direction
-/gps/pos/type Point
-/gps/pos/centre 0 0 -10 cm
-/gps/ang/type iso
+/control/execute source-cs137.mac
+/control/execute position-cs137-cylinder.mac
 
 /run/beamOn 100

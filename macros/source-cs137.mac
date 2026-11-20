@@ -1,8 +1,10 @@
 # Cs-137 ion source preset (source identity and decay parent only).
 # Physics note: Cs-137 decays to Ba-137m, which then emits the 661.7 keV gamma.
-# Requires running the app with -r on to activate radioactive decay physics.
+# Requires radioactive decay physics (enabled by default).
 
 /sourceLab/output/source cs137
 
 /gps/particle ion
 /gps/ion 55 137 0 0
+/gps/ene/type Mono
+/gps/ene/mono 0 keV

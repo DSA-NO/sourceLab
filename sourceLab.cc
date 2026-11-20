@@ -33,7 +33,7 @@ void PrintUsage()
   G4cout << "   -v macro  : visualize, execute the macro, and keep the UI open" << G4endl;
   G4cout << "   -t N      : number of threads for multi-threaded builds" << G4endl;
   G4cout << "   -p model  : EM model: option4 (default), livermore, penelope" << G4endl;
-  G4cout << "   -r mode   : radioactive decay physics: off (default), on" << G4endl;
+  G4cout << "   -r mode   : radioactive decay physics: on (default), off" << G4endl;
   G4cout << "   (no args) : interactive session" << G4endl;
 }
 
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
   G4String macro;
   G4String visMacro;
   G4String emModel = "option4";
-  G4bool enableRadioactiveDecay = false;
+  G4bool enableRadioactiveDecay = true;
 
 #ifdef G4MULTITHREADED
   G4int nThreads = 0;

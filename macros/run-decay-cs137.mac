@@ -1,5 +1,5 @@
 # Small Cs-137 decay example run.
-# Use with: sourceLab -r on -b macros/run-decay-cs137.mac
+# Radioactive decay physics is enabled by default.
 
 /sourceLab/geometry/worldSize 30 cm
 /sourceLab/geometry/phantomHeight 5 cm
@@ -16,12 +16,7 @@
 
 /control/execute source-cs137.mac
 
-/gps/pos/type Volume
-/gps/pos/shape Cylinder
-/gps/pos/centre 0 0 0 cm
-/gps/pos/radius 2.375 mm
-/gps/pos/halfz 2.5 cm
-/gps/ang/type iso
+/control/execute position-cs137-cylinder.mac
 
 /run/printProgress 20
 /run/beamOn 200

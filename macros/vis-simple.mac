@@ -12,16 +12,15 @@
 /sourceLab/geometry/sourceShellThickness 0.8 mm
 
 # Keep the run in a clean visual smoke-test state.
+/sourceLab/output/geometry water-annulus
+/sourceLab/output/region phantom
 /run/initialize
 /vis/open OGL
 /control/execute vis.mac
 
 # Source composition pattern and a short beam for easy viewing.
-/control/execute source-co60.mac
-
-/gps/pos/type Point
-/gps/pos/centre 0 0 -10 cm
-/gps/ang/type iso
+/control/execute source-cs137.mac
+/control/execute position-cs137-cylinder.mac
 
 /run/printProgress 1
 /run/beamOn 5

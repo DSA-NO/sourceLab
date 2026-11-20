@@ -1,4 +1,4 @@
 # Source alias macro.
-# Prefer: source-co60.mac
+# Prefer: source-cs137.mac
 
-/control/execute source-co60.mac
+/control/execute source-cs137.mac

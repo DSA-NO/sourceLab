@@ -54,12 +54,13 @@ There are also simple smoke-test macro examples:
 ./scripts/run-micromamba.sh run -v vis-simple.mac
 ```
 
-The default run macro now uses composed source presets:
+The default batch and visual macros configure Cs-137 ions at rest, sampled uniformly throughout the Cs-137 cylinder:
 
-- `macros/source-co60.mac`: canonical Co-60 source preset
-- `macros/source.mac`: compatibility alias that executes `source-co60.mac`
+- `macros/source-cs137.mac`: Cs-137 identity and energy
+- `macros/position-cs137-cylinder.mac`: cylinder position distribution
+- `macros/source.mac`: compatibility alias for `source-cs137.mac`
 
-For a quick visualization run:
+For an interactive visualization session (use `/run/beamOn 5` to generate events):
 
 ```bash
 ./scripts/run-micromamba.sh run -v init_vis.mac
@@ -71,10 +72,10 @@ Use `-p option4|livermore|penelope` to select the EM sub-model. For example:
 ./scripts/run-micromamba.sh run -p livermore -b run.mac
 ```
 
-Use `-r on|off` to enable or disable radioactive decay physics. For example:
+Radioactive decay physics is enabled by default. Use `-r on|off` to enable or disable it; with `-r off`, Cs-137 ions will not undergo radioactive decay. For example:
 
 ```bash
-./scripts/run-micromamba.sh run -r on -b run.mac
+./scripts/run-micromamba.sh run -r off -b run.mac
 ```
 
 ## Source and phantom geometry
@@ -96,7 +97,7 @@ The source, shell, and water annuli are separate sibling volumes in the air worl
 
 The `water_regions` ntuple contains five rows per event, with `EventId`, `ThreadId`, `Region` (copy numbers 0–4), `Dose`, `Edep`, and `TrackL`. The `water_region_run` ntuple has five rows per run in sequential mode or per worker in MT mode, with `ThreadId`, `Region`, `InnerRadiusMm`, `OuterRadiusMm`, `MassG`, `Dose`, `Edep`, and `TrackL`. Dose, energy, and track-length columns use Geant4 internal units, as in the existing ntuples. Sum each region's run scores across workers; region masses and radii are repeated, not additive. `/sourceLab/output/depth` remains metadata and defaults to `0 cm`.
 
-The `run-decay-cs137.mac` example samples Cs-137 ions uniformly throughout the inner source cylinder; run it with `-r on` to enable radioactive decay. Its GPS radius and half-height match the geometry dimensions set in that macro. If those dimensions are edited, update the GPS radius and half-height to match.
+The default runs and `run-decay-cs137.mac` sample Cs-137 ions uniformly throughout the inner source cylinder. The GPS radius and half-height in `position-cs137-cylinder.mac` match the default geometry dimensions. If the source radius or phantom height is changed, update the GPS radius or half-height to match.
 
 ## Output metadata and file naming
 
@@ -188,16 +189,13 @@ Source composition contract:
 Available source presets:
 
 - `source-co60.mac`
-- `source.mac` (alias macro pointing to the default preset for quick runs)
-
-Decay-enabled example preset:
-
-- `source-cs137.mac` (run with `-r on`; Cs-137 decays via Ba-137m)
+- `source-cs137.mac` (default; Cs-137 decays via Ba-137m)
+- `source.mac` (alias for `source-cs137.mac`)
 
 Small decay example run macro:
 
 - `run-decay-cs137.mac`
-- run with: `./scripts/run-micromamba.sh run -r on -b run-decay-cs137.mac`
+- run with: `./scripts/run-micromamba.sh run -b run-decay-cs137.mac`
 
 Nested macro path robustness:
 
