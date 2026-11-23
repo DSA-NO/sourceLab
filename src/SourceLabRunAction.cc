@@ -1,6 +1,7 @@
 #include "SourceLabRunAction.hh"
 
 #include "SourceLabDetectorConstruction.hh"
+#include "LabOutput.hh"
 
 #include "G4AccumulableManager.hh"
 #include "G4AnalysisManager.hh"
@@ -259,14 +260,20 @@ G4String SourceLabRunAction::BuildOutputFileName() const
   return "sourceLab-" + tag + ".root";
 }
 
-void SourceLabRunAction::BeginOfRunAction(const G4Run*)
+void SourceLabRunAction::BeginOfRunAction(const G4Run* run)
 {
   auto* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Reset();
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->Reset();
-  analysisManager->OpenFile(BuildOutputFileName());
+  fOutputPath = LabOutput::RunFile(isMaster, run->GetRunID(), BuildOutputFileName());
+  if (!analysisManager->OpenFile(fOutputPath)) {
+    G4ExceptionDescription message;
+    message << "Cannot open output file '" << fOutputPath << "'.";
+    G4Exception("SourceLabRunAction::BeginOfRunAction", "SourceLabOutput004", FatalException, message);
+  }
+  if (isMaster) G4cout << "Output path: " << fOutputPath << G4endl;
 
   if (fEnableRadioactiveDecay
       && (!G4Threading::IsMultithreadedApplication() || !isMaster)) {

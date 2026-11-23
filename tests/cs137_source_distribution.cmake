@@ -9,7 +9,7 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.ma
   string(REPLACE "/vis/open OGL\n" "" content "${content}")
   string(REPLACE "/control/execute vis.mac\n" "" content "${content}")
   string(REPLACE "/run/beamOn 5\n" "/run/beamOn 100\n" content "${content}")
-  string(REPLACE "/run/beamOn 1000000\n" "/run/beamOn 100\n" content "${content}")
+  string(REPLACE "/run/beamOn 10000000\n" "/run/beamOn 100\n" content "${content}")
   if(macro STREQUAL "init_vis.mac")
     string(APPEND content "\n/run/beamOn 100\n")
   endif()
@@ -17,17 +17,26 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.ma
     "/random/setSeeds 12345 67890\n/gps/verbose 2\n${content}")
 
   execute_process(
-    COMMAND "${CMAKE_COMMAND}" -E env G4RUN_MANAGER_TYPE=Serial
+    COMMAND "${CMAKE_COMMAND}" -E env G4RUN_MANAGER_TYPE=Serial "LAB_OUTPUT_DIR=${TEST_DIR}/output"
             "${APP}" -b "${TEST_DIR}/run-test.mac"
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
   if(NOT result STREQUAL "0")
     message(FATAL_ERROR "${macro} failed (${result}):\n${output}\n${error}")
   endif()
+  string(REGEX MATCH "Output path: ([^\r\n]+)" path_line "${output}")
+  set(output_file "${CMAKE_MATCH_1}")
+  string(FIND "${output_file}" "${TEST_DIR}/output/" prefix)
+  list(FIND previous_outputs "${output_file}" duplicate)
+  if(NOT path_line OR NOT EXISTS "${output_file}" OR NOT prefix EQUAL 0
+      OR NOT duplicate EQUAL -1)
+    message(FATAL_ERROR "${macro}: output is missing or not unique under the configured output root")
+  endif()
+  list(APPEND previous_outputs "${output_file}")
   if(NOT output MATCHES "Run complete:.*source=cs137.*decay=on")
     message(FATAL_ERROR "${macro}: expected Cs-137 metadata and radioactive decay enabled")
   endif()
   if(macro STREQUAL "run-cs137-statistics.mac"
-      AND NOT output MATCHES "file=sourceLab-cs137-statistics-1m.root")
+      AND NOT output MATCHES "file=sourceLab-cs137-statistics-10m.root")
     message(FATAL_ERROR "${macro}: expected its dedicated output file")
   endif()
 
@@ -76,8 +85,38 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.ma
   endif()
 endforeach()
 
+file(WRITE "${TEST_DIR}/multiple-runs.mac"
+  "/run/initialize\n/gps/particle gamma\n/gps/energy 1 MeV\n/run/beamOn 2\n/run/beamOn 2\n")
+set(modes Serial)
+if(MT_ENABLED)
+  list(APPEND modes MT)
+endif()
+foreach(mode IN LISTS modes)
+  set(thread_args)
+  if(mode STREQUAL "MT")
+    set(thread_args -t 2)
+  endif()
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E env "G4RUN_MANAGER_TYPE=${mode}" "LAB_OUTPUT_DIR=${TEST_DIR}/output"
+            "${APP}" ${thread_args} -b "${TEST_DIR}/multiple-runs.mac"
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+  string(REGEX MATCHALL "Output path: [^\r\n]+" paths "${output}")
+  list(LENGTH paths path_count)
+  list(REMOVE_DUPLICATES paths)
+  list(LENGTH paths unique_path_count)
+  if(NOT result STREQUAL "0" OR NOT path_count EQUAL 2 OR NOT unique_path_count EQUAL 2)
+    message(FATAL_ERROR "${mode}: repeated runs did not create distinct output files:\n${output}\n${error}")
+  endif()
+  foreach(path IN LISTS paths)
+    string(REPLACE "Output path: " "" path "${path}")
+    if(NOT EXISTS "${path}")
+      message(FATAL_ERROR "${mode}: repeated run output is missing: ${path}")
+    endif()
+  endforeach()
+endforeach()
+
 execute_process(
-  COMMAND "${CMAKE_COMMAND}" -E env G4RUN_MANAGER_TYPE=Serial
+  COMMAND "${CMAKE_COMMAND}" -E env G4RUN_MANAGER_TYPE=Serial "LAB_OUTPUT_DIR=${TEST_DIR}/output"
           "${APP}" -r off -b "${TEST_DIR}/run-test.mac"
   RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
 if(NOT result STREQUAL "0" OR NOT output MATCHES "Run complete:.*source=cs137.*decay=off")

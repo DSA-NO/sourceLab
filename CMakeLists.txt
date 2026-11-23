@@ -34,6 +34,7 @@ if(BUILD_TESTING)
       "-DAPP=$<TARGET_FILE:sourceLab>"
       "-DSOURCE_DIR=${PROJECT_SOURCE_DIR}"
       "-DTEST_DIR=${PROJECT_BINARY_DIR}/cs137-source-test"
+      "-DMT_ENABLED=${Geant4_multithreaded_FOUND}"
       -P "${PROJECT_SOURCE_DIR}/tests/cs137_source_distribution.cmake")
 endif()
 

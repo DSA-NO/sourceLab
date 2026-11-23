@@ -1,4 +1,4 @@
-# One million Cs-137 decays for a higher-statistics test.
+# Ten million Cs-137 decays for a higher-statistics test.
 # Radioactive decay physics is enabled by default.
 # Run with: ./scripts/run-micromamba.sh run -t 16 -b run-cs137-statistics.mac
 
@@ -8,7 +8,7 @@
 /sourceLab/geometry/sourceShellThickness 0.8 mm
 /control/macroPath .:macros:../macros
 
-/sourceLab/output/tag cs137-statistics-1m
+/sourceLab/output/tag cs137-statistics-10m
 /sourceLab/output/geometry water-annulus
 /sourceLab/output/region phantom
 /sourceLab/output/depth 0 cm
@@ -18,5 +18,5 @@
 /control/execute source-cs137.mac
 /control/execute position-cs137-cylinder.mac
 
-/run/printProgress 100000
-/run/beamOn 1000000
+/run/printProgress 1000000
+/run/beamOn 10000000

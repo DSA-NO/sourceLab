@@ -54,13 +54,13 @@ There are also simple smoke-test macro examples:
 ./scripts/run-micromamba.sh run -v vis-simple.mac
 ```
 
-For a higher-statistics Cs-137 run, use the one-million-event macro:
+For a higher-statistics Cs-137 run, use the ten-million-event macro:
 
 ```bash
 ./scripts/run-micromamba.sh run -t 16 -b run-cs137-statistics.mac
 ```
 
-It writes `sourceLab-cs137-statistics-1m.root` and records per-event scores and statistical summaries. Adjust `/run/beamOn` in `macros/run-cs137-statistics.mac` to change the event count. One million events is a starting point, not a guarantee of adequate precision; check the reported standard errors for the quantity and regions you care about. Large runs produce correspondingly larger ROOT files.
+It writes `sourceLab-cs137-statistics-10m.root` in a timestamped output folder and records per-event scores and statistical summaries. Adjust `/run/beamOn` in `macros/run-cs137-statistics.mac` to change the event count. Ten million events is a starting point, not a guarantee of adequate precision; check the reported standard errors for the quantity and regions you care about. Large runs produce correspondingly larger ROOT files.
 
 The default batch and visual macros configure Cs-137 ions at rest, sampled uniformly throughout the Cs-137 cylinder:
 
@@ -129,6 +129,8 @@ Output file naming:
 
 - default tag (unset): `sourceLab-default.root`
 - custom tag: `sourceLab-<tag>.root`
+
+Each run writes its ROOT file under `output/<UTC-timestamp>/` in the sourceLab project directory. A numeric suffix is added if the timestamp already exists, so repeated or concurrent runs do not overwrite each other. The full output path is printed as `Output path:`. Set `LAB_OUTPUT_DIR` to use a different parent directory; a relative path is resolved from the directory where the application starts, before it switches to the macro directory. If the build's source directory no longer exists, the default is `output/` in the startup directory. The project output folder is Git-ignored; old results are not automatically deleted.
 
 Allowed `tag` characters are letters, digits, `-`, and `_`.
 

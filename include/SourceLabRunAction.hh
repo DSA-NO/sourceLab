@@ -63,6 +63,7 @@ class SourceLabRunAction : public G4UserRunAction
 
     std::unique_ptr<G4GenericMessenger> fMessenger;
     G4String fOutputTag = "default";
+    G4String fOutputPath;
     G4String fOutputSource = "unspecified";
     G4String fOutputGeometry = "water-annulus";
     G4String fOutputRegion = "phantom";
