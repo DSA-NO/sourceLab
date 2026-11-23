@@ -1,6 +1,6 @@
 #include "SourceLabActionInitialization.hh"
 #include "SourceLabDetectorConstruction.hh"
-#include "LabOutput.hh"
+#include "SourceLabOutput.hh"
 
 #include "FTFP_BERT.hh"
 #include "G4EmLivermorePhysics.hh"
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  LabOutput::Initialize(SOURCELAB_SOURCE_DIR);
+  SourceLab::Output::Initialize(SOURCELAB_SOURCE_DIR);
 
   G4UIExecutive* ui = nullptr;
   if (macro.empty()) {

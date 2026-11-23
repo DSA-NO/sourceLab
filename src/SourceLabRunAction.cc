@@ -1,7 +1,7 @@
 #include "SourceLabRunAction.hh"
 
 #include "SourceLabDetectorConstruction.hh"
-#include "LabOutput.hh"
+#include "SourceLabOutput.hh"
 
 #include "G4AccumulableManager.hh"
 #include "G4AnalysisManager.hh"
@@ -267,7 +267,7 @@ void SourceLabRunAction::BeginOfRunAction(const G4Run* run)
 
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->Reset();
-  fOutputPath = LabOutput::RunFile(isMaster, run->GetRunID(), BuildOutputFileName());
+  fOutputPath = Output::RunFile(isMaster, run->GetRunID(), BuildOutputFileName());
   if (!analysisManager->OpenFile(fOutputPath)) {
     G4ExceptionDescription message;
     message << "Cannot open output file '" << fOutputPath << "'.";

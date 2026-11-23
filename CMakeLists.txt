@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Geant4 REQUIRED ui_all vis_all)
 
-file(GLOB SOURCE_LAB_SOURCES ${PROJECT_SOURCE_DIR}/src/*.cc)
+file(GLOB SOURCE_LAB_SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB SOURCE_LAB_HEADERS ${PROJECT_SOURCE_DIR}/include/*.hh)
 
 add_executable(sourceLab sourceLab.cc ${SOURCE_LAB_SOURCES} ${SOURCE_LAB_HEADERS})
