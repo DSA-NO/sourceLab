@@ -64,6 +64,8 @@ rmdir "$tmp"
 
 Run these commands in a shell with `set -e` and `set -o pipefail` so a failed solve or export does not replace the lock. Lock verification checks conda package records, not changes made by pip or manual edits inside an environment.
 
+Builds and batch runs use `scripts/run-isolated.sh` to clear inherited compiler, library, Geant4 dataset, ROOT, CMake and Python paths before activating the lab environment. Operating-system libraries are still required. An interactive shell or a direct `micromamba run` can reintroduce settings from the user's shell.
+
 If you want an interactive shell inside the environment:
 
 ```bash
@@ -160,6 +162,27 @@ Output file naming:
 - custom tag: `sourceLab-<tag>.root`
 
 Each run writes its ROOT file under `output/<UTC-timestamp>/` in the sourceLab project directory. A numeric suffix is added if the timestamp already exists, so repeated or concurrent runs do not overwrite each other. The full output path is printed as `Output path:`. Set `LAB_OUTPUT_DIR` to use a different parent directory; a relative path is resolved from the directory where the application starts, before it switches to the macro directory. If the build's source directory no longer exists, the default is `output/` in the startup directory. The project output folder is Git-ignored; old results are not automatically deleted.
+
+### Read output with Uproot
+
+NumPy and Uproot are in the lab environment; full ROOT is not required. Replace the filename with the reported `Output path:`:
+
+```bash
+./scripts/run-micromamba.sh setup
+./scripts/run-isolated.sh micromamba geant4-sourceLab python - /path/to/output.root <<'PY'
+import sys
+import uproot
+
+with uproot.open(sys.argv[1]) as root_file:
+    scores = root_file["phantom"]
+    print("Trees:", root_file.keys(cycle=False))
+    print("Events:", scores.num_entries)
+    print("First doses (Geant4 internal units):", scores["Dose"].array(entry_stop=5, library="np"))
+    print("Events per run/worker:", root_file["runinfo"]["Events"].array(library="np"))
+PY
+```
+
+The example reads only five doses, not a whole large output file. CI runs CTest and verifies a small generated ROOT file with Uproot.
 
 Allowed `tag` characters are letters, digits, `-`, and `_`.
 
