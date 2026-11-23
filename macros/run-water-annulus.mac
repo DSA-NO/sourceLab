@@ -1,0 +1,6 @@
+# Cs-137 run in a water annulus.
+/control/macroPath .:macros:../macros
+/sourceLab/geometry/phantomMaterial G4_WATER
+/sourceLab/output/tag run-simple
+/sourceLab/output/geometry water-annulus
+/control/execute run-annulus.mac

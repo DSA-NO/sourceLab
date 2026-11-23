@@ -210,7 +210,7 @@ case "$mode" in
     echo "  $0 build"
     echo "  $0 run"
     echo "  $0 run -b macros/run.mac"
-    echo "  $0 exec python analysis/summarize_water.py /path/to/output.root"
+    echo "  $0 exec python analysis/summarize_phantom.py /path/to/output.root"
     echo "  $0 shell"
     exit 2
     ;;

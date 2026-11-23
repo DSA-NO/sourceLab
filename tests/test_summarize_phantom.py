@@ -8,14 +8,15 @@ from pathlib import Path
 import uproot
 
 PROJECT = Path(__file__).resolve().parents[1]
-SCRIPT = PROJECT / "analysis" / "summarize_water.py"
+SCRIPT = PROJECT / "analysis" / "summarize_phantom.py"
+LEGACY_SCRIPT = PROJECT / "analysis" / "summarize_water.py"
 sys.path.insert(0, str(SCRIPT.parent))
-from summarize_water import pooled_statistics
+from summarize_phantom import pooled_statistics
 
 
 def write_fixture(
     path, *, bad_counts=False, bad_geometry=False, include_random_state=True,
-    region_count=5, missing_region=None,
+    region_count=5, missing_region=None, phantom_material=None,
 ):
     threads = [0, 1, 2]
     counts = [3, 2, 0]
@@ -35,6 +36,8 @@ def write_fixture(
     }
     if not include_random_state:
         del info["RandomState"]
+    if phantom_material is not None:
+        info["PhantomMaterial"] = phantom_material
     info_types = {
         name: "string" for name in info
         if name not in ("DepthCm", "Events", "ThreadId")
@@ -76,7 +79,7 @@ def write_fixture(
         }).extend(stats)
 
 
-class WaterReportTests(unittest.TestCase):
+class PhantomReportTests(unittest.TestCase):
     def test_pooling_and_small_counts(self):
         count, mean, stddev, stderr = pooled_statistics(
             [(3, 2.0, 8.0), (0, math.nan, 0.0), (2, 12.0, 8.0)]
@@ -94,13 +97,14 @@ class WaterReportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "fixture.root"
             report_path = root.with_name("fixture-report.txt")
-            write_fixture(root)
+            write_fixture(root, phantom_material=["G4_WATER"] * 3)
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), str(root)], capture_output=True, text=True
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             report = report_path.read_text(encoding="utf-8")
             self.assertIn("Tag: fixture", report)
+            self.assertIn("Phantom material: G4_WATER", report)
             self.assertIn("Events: 5", report)
             self.assertIn("Scoring streams: 3", report)
             self.assertIn("Water region 4: 5-6 mm; mass 1 g", report)
@@ -129,6 +133,58 @@ class WaterReportTests(unittest.TestCase):
                 self.assertIn("ERROR:", result.stderr)
                 self.assertFalse(root.with_name("fixture-report.txt").exists())
 
+    def test_legacy_entry_point_matches_phantom_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "fixture.root"
+            write_fixture(root, phantom_material=["G4_TISSUE_SOFT_ICRP"] * 3)
+            reports = []
+            for index, script in enumerate((SCRIPT, LEGACY_SCRIPT)):
+                output = Path(directory) / f"report-{index}.txt"
+                result = subprocess.run(
+                    [sys.executable, str(script), str(root), "--output", str(output)],
+                    capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                reports.append([
+                    line for line in output.read_text(encoding="utf-8").splitlines()
+                    if not line.startswith("Generated (UTC):")
+                ])
+            self.assertEqual(reports[0], reports[1])
+            self.assertIn("  Phantom material: G4_TISSUE_SOFT_ICRP", reports[1])
+
+    def test_legacy_module_imports(self):
+        from summarize_water import pooled_statistics as legacy_pooled_statistics
+
+        self.assertEqual(legacy_pooled_statistics([(1, 4.0, 0.0)]), (1, 4.0, None, None))
+        result = subprocess.run(
+            [sys.executable, "-c",
+             "from analysis.summarize_water import pooled_statistics; "
+             "assert pooled_statistics([(1, 4.0, 0.0)]) == (1, 4.0, None, None)"],
+            cwd=PROJECT, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_tissue_material_and_inconsistent_metadata(self):
+        for materials in (
+            ["G4_TISSUE_SOFT_ICRP"] * 3,
+            ["G4_WATER", "G4_TISSUE_SOFT_ICRP", "G4_WATER"],
+        ):
+            with self.subTest(materials=materials), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "fixture.root"
+                write_fixture(root, phantom_material=materials)
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), str(root)], capture_output=True, text=True
+                )
+                if materials[0] == "G4_TISSUE_SOFT_ICRP":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    report = root.with_name("fixture-report.txt").read_text(encoding="utf-8")
+                    self.assertIn("Phantom material: G4_TISSUE_SOFT_ICRP", report)
+                    self.assertIn("Whole ICRP soft tissue phantom", report)
+                    self.assertIn("ICRP soft tissue region 4:", report)
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("PhantomMaterial differs between workers", result.stderr)
+
     def test_older_output_without_random_states_is_reported(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "fixture.root"
@@ -139,6 +195,7 @@ class WaterReportTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             report = root.with_name("fixture-report.txt").read_text(encoding="utf-8")
             self.assertIn("Random states: not recorded in this file", report)
+            self.assertIn("Phantom material: not recorded (legacy water output)", report)
             self.assertIn("Water region 5:", report)
 
 

@@ -1,0 +1,13 @@
+# Shared geometry, source, and run setup for the annulus entry points.
+/control/macroPath .:macros:../macros
+/sourceLab/geometry/worldSize 30 cm
+/sourceLab/geometry/phantomHeight 5 cm
+/sourceLab/geometry/sourceRadius 2.375 mm
+/sourceLab/geometry/sourceShellThickness 0.8 mm
+/sourceLab/output/region phantom
+/sourceLab/output/depth 0 cm
+
+/run/initialize
+/control/execute source-cs137.mac
+/control/execute position-cs137-cylinder.mac
+/run/beamOn 100

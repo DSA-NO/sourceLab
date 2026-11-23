@@ -1,21 +1,3 @@
-/sourceLab/geometry/worldSize 30 cm
-/sourceLab/geometry/phantomHeight 5 cm
-/sourceLab/geometry/sourceRadius 2.375 mm
-/sourceLab/geometry/sourceShellThickness 0.8 mm
-
-# Allow nested /control/execute to resolve source macros in root or build workflows.
+# Default batch run: water annulus.
 /control/macroPath .:macros:../macros
-
-# Output metadata
-/sourceLab/output/tag run-simple
-/sourceLab/output/geometry water-annulus
-/sourceLab/output/region phantom
-/sourceLab/output/depth 0 cm
-
-/run/initialize
-
-# Source composition pattern (shared style with doseLab)
-/control/execute source-cs137.mac
-/control/execute position-cs137-cylinder.mac
-
-/run/beamOn 100
+/control/execute run-water-annulus.mac

@@ -1,9 +1,10 @@
 file(MAKE_DIRECTORY "${TEST_DIR}")
-foreach(macro source-cs137.mac source.mac position-cs137-cylinder.mac)
+foreach(macro source-cs137.mac source.mac position-cs137-cylinder.mac
+              run-water-annulus.mac run-tissue-annulus.mac run-annulus.mac)
   configure_file("${SOURCE_DIR}/macros/${macro}" "${TEST_DIR}/${macro}" COPYONLY)
 endforeach()
 
-foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.mac vis-simple.mac init_vis.mac)
+foreach(macro run.mac run-water-annulus.mac run-tissue-annulus.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.mac vis-simple.mac init_vis.mac)
   file(READ "${SOURCE_DIR}/macros/${macro}" content)
   # Exercise the visualization macros' source setup without requiring a display.
   string(REPLACE "/vis/open OGL\n" "" content "${content}")
@@ -34,6 +35,13 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.ma
   list(APPEND previous_outputs "${output_file}")
   if(NOT output MATCHES "Run complete:.*source=cs137.*decay=on")
     message(FATAL_ERROR "${macro}: expected Cs-137 metadata and radioactive decay enabled")
+  endif()
+  if(macro STREQUAL "run-tissue-annulus.mac" AND NOT output MATCHES "material=G4_TISSUE_SOFT_ICRP")
+    message(FATAL_ERROR "${macro}: expected ICRP soft-tissue material")
+  endif()
+  if((macro STREQUAL "run.mac" OR macro STREQUAL "run-water-annulus.mac")
+      AND NOT output MATCHES "file=sourceLab-run-simple.root.*material=G4_WATER.*geometry=water-annulus")
+    message(FATAL_ERROR "${macro}: expected the default water output and metadata")
   endif()
   if(macro STREQUAL "run-cs137-statistics.mac"
       AND NOT output MATCHES "file=sourceLab-cs137-statistics-10m.root")
@@ -84,6 +92,16 @@ foreach(macro run.mac run-simple.mac run-decay-cs137.mac run-cs137-statistics.ma
     message(FATAL_ERROR "${macro}: primary positions do not span the source volume")
   endif()
 endforeach()
+
+file(WRITE "${TEST_DIR}/late-material.mac"
+  "/run/initialize\n/sourceLab/geometry/phantomMaterial G4_TISSUE_SOFT_ICRP\n")
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E env G4RUN_MANAGER_TYPE=Serial "LAB_OUTPUT_DIR=${TEST_DIR}/output"
+          "${APP}" -b "${TEST_DIR}/late-material.mac"
+  RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(result STREQUAL "0" OR NOT "${output}${error}" MATCHES "phantomMaterial")
+  message(FATAL_ERROR "Material changes after initialization must be rejected:\n${output}\n${error}")
+endif()
 
 file(WRITE "${TEST_DIR}/multiple-runs.mac"
   "/run/initialize\n/gps/particle gamma\n/gps/energy 1 MeV\n/run/beamOn 2\n/run/beamOn 2\n")

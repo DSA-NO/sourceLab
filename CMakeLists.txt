@@ -29,6 +29,7 @@ if(BUILD_TESTING)
   target_link_libraries(water_geometry_test PRIVATE ${Geant4_LIBRARIES})
   add_test(NAME water_geometry_default COMMAND water_geometry_test)
   add_test(NAME water_geometry_custom COMMAND water_geometry_test custom)
+  add_test(NAME tissue_geometry COMMAND water_geometry_test tissue)
   add_test(NAME cs137_source_distribution
     COMMAND ${CMAKE_COMMAND}
       "-DAPP=$<TARGET_FILE:sourceLab>"
@@ -43,6 +44,9 @@ set(SOURCELAB_REQUIRED_MACROS
   init_vis.mac
   vis.mac
   run.mac
+  run-water-annulus.mac
+  run-tissue-annulus.mac
+  run-annulus.mac
   source-cs137.mac
   position-cs137-cylinder.mac
 )

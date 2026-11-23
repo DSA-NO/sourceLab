@@ -8,6 +8,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4ThreeVector.hh"
 #include "G4Tubs.hh"
+#include "G4UImanager.hh"
 #include "G4VPhysicalVolume.hh"
 
 #include <algorithm>
@@ -33,6 +34,14 @@ int main(int argc, char** argv)
 {
   SourceLab::SourceLabDetectorConstruction detector;
   auto config = detector.GetConfig();
+  const bool tissue = argc > 1 && std::string(argv[1]) == "tissue";
+  auto* ui = G4UImanager::GetUIpointer();
+  Check(ui->ApplyCommand("/sourceLab/geometry/phantomMaterial invalid") != 0);
+  Check(detector.GetConfig().phantomMaterial == "G4_WATER");
+  if (tissue) {
+    Check(ui->ApplyCommand("/sourceLab/geometry/phantomMaterial G4_TISSUE_SOFT_ICRP") == 0);
+    config = detector.GetConfig();
+  }
   if (argc > 1 && std::string(argv[1]) == "custom") {
     config.sourceRadius = 3. * mm;
     config.sourceShellThickness = 1.25 * mm;
@@ -51,14 +60,16 @@ int main(int argc, char** argv)
     const auto* volume = G4PhysicalVolumeStore::GetInstance()->GetVolume("Phantom" + std::to_string(i));
     Check(volume && volume->GetCopyNo() == static_cast<G4int>(i));
     const auto* solid = dynamic_cast<const G4Tubs*>(volume->GetLogicalVolume()->GetSolid());
-    Check(solid && volume->GetLogicalVolume()->GetMaterial()->GetName() == "G4_WATER");
+    const auto* material = volume->GetLogicalVolume()->GetMaterial();
+    Check(solid && material->GetName() == (tissue ? "G4_TISSUE_SOFT_ICRP" : "G4_WATER"));
+    Check(Close(material->GetDensity(), (tissue ? 1.03 : 1.0) * g / cm3));
     Check(Close(regions[i].innerRadius, boundaries[i]) && Close(regions[i].outerRadius, boundaries[i + 1]));
     Check(Close(solid->GetInnerRadius(), boundaries[i]) && Close(solid->GetOuterRadius(), boundaries[i + 1]));
     Check(Close(2. * solid->GetZHalfLength(), config.phantomHeight));
     totalMass += regions[i].mass;
   }
   const auto expectedMass = pi * (boundaries.back() * boundaries.back() - wall * wall)
-                            * config.phantomHeight * (1. * g / cm3);
+                            * config.phantomHeight * ((tissue ? 1.03 : 1.0) * g / cm3);
   Check(Close(totalMass, expectedMass));
 
   G4Navigator navigator;

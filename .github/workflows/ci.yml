@@ -75,7 +75,20 @@ jobs:
             echo "Expected exactly one existing output file, got: $output" >&2
             exit 1
           fi
-          ./scripts/run-isolated.sh micromamba geant4-sourceLab python tests/check_root_output.py "$output" phantom 100
-          ./scripts/run-micromamba.sh exec python -m unittest discover -s tests -p test_summarize_water.py -v
-          ./scripts/run-micromamba.sh exec python analysis/summarize_water.py "$output" --output "$RUNNER_TEMP/sourceLab-report.txt"
+          ./scripts/run-isolated.sh micromamba geant4-sourceLab python tests/check_root_output.py "$output" phantom 100 --material G4_WATER
+          ./scripts/run-micromamba.sh exec python -m unittest discover -s tests -p test_summarize_phantom.py -v
+          ./scripts/run-micromamba.sh exec python analysis/summarize_phantom.py "$output" --output "$RUNNER_TEMP/sourceLab-report.txt"
           grep -q 'Events: 100' "$RUNNER_TEMP/sourceLab-report.txt"
+
+      - name: Verify ICRP tissue output
+        run: |
+          export LAB_OUTPUT_DIR="$RUNNER_TEMP/sourceLab-tissue-smoke"
+          ./scripts/run-isolated.sh micromamba geant4-sourceLab ./build-ci/sourceLab -t 2 -b macros/run-tissue-annulus.mac | tee "$RUNNER_TEMP/sourceLab-tissue.log"
+          output="$(sed -n 's/^Output path: //p' "$RUNNER_TEMP/sourceLab-tissue.log")"
+          if [[ -z "$output" || "$output" == *$'\n'* || ! -f "$output" ]]; then
+            echo "Expected exactly one existing output file, got: $output" >&2
+            exit 1
+          fi
+          ./scripts/run-isolated.sh micromamba geant4-sourceLab python tests/check_root_output.py "$output" phantom 100 --material G4_TISSUE_SOFT_ICRP
+          ./scripts/run-micromamba.sh exec python analysis/summarize_phantom.py "$output" --output "$RUNNER_TEMP/sourceLab-tissue-report.txt"
+          grep -q 'Phantom material: G4_TISSUE_SOFT_ICRP' "$RUNNER_TEMP/sourceLab-tissue-report.txt"

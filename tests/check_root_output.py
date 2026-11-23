@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser(description="Check a smoke run's ROOT output.")
 parser.add_argument("file")
 parser.add_argument("tree")
 parser.add_argument("events", type=int)
+parser.add_argument("--material", choices=("G4_WATER", "G4_TISSUE_SOFT_ICRP"))
 args = parser.parse_args()
 
 with uproot.open(args.file) as root_file:
@@ -23,5 +24,9 @@ with uproot.open(args.file) as root_file:
         raise ValueError("runinfo does not describe the expected events")
     if not all(random_states):
         raise ValueError("runinfo contains an empty random state")
+    if args.material:
+        materials = runinfo["PhantomMaterial"].array(library="np")
+        if len(materials) == 0 or any(material != args.material for material in materials):
+            raise ValueError(f"runinfo does not identify phantom material {args.material}")
 
 print(f"Verified {args.events} events in {args.file}")

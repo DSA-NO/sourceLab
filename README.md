@@ -85,13 +85,22 @@ There are also simple smoke-test macro examples:
 ./scripts/run-micromamba.sh run -v vis-simple.mac
 ```
 
-For a higher-statistics Cs-137 run, use the ten-million-event macro:
+Choose either annulus material for the same Cs-137 run:
+
+```bash
+./scripts/run-micromamba.sh run -b run-water-annulus.mac
+./scripts/run-micromamba.sh run -b run-tissue-annulus.mac
+```
+
+Both entry points execute `run-annulus.mac`, which defines their shared geometry, source and event count. `run.mac` selects the water entry point by default. Change `/run/beamOn` in `run-annulus.mac` to adjust the event count for both.
+
+For a higher-statistics Cs-137 water run, use the ten-million-event macro:
 
 ```bash
 ./scripts/run-micromamba.sh run -t 16 -b run-cs137-statistics.mac
 ```
 
-It writes `sourceLab-cs137-statistics-10m.root` in a timestamped output folder and records per-event scores and statistical summaries. Adjust `/run/beamOn` in `macros/run-cs137-statistics.mac` to change the event count. Ten million events is a starting point, not a guarantee of adequate precision; check the reported standard errors for the quantity and regions you care about. Large runs produce correspondingly larger ROOT files.
+It writes `sourceLab-cs137-statistics-10m.root` in a timestamped output folder and records per-event scores and statistical summaries. Adjust `/run/beamOn` in `macros/run-cs137-statistics.mac` to change the event count. For either material, the shared `run-annulus.mac` event count can instead be adjusted as described above. Ten million events is a starting point, not a guarantee of adequate precision; check the reported standard errors for the quantity and regions you care about. Large runs produce correspondingly larger ROOT files.
 
 The default batch and visual macros configure Cs-137 ions at rest, sampled uniformly throughout the Cs-137 cylinder:
 
@@ -121,20 +130,23 @@ Radioactive decay physics is enabled by default. Use `-r on|off` to enable or di
 
 The default geometry is a 30 cm cubic `G4_AIR` world (density 0.00120479 g/cm3) containing three concentric, centered regions: a 5 cm tall metallic Cs-137 cylinder (radius 2.375 mm, density 1.873 g/cm3), an open-ended `G4_STAINLESS-STEEL` cylindrical wall (density 8 g/cm3, 0.8 mm radial thickness), and a `G4_WATER` annular phantom (density 1 g/cm3, outer radius 33.210 mm, height 5 cm). The Cs-137 material uses a single Cs-137 isotope. All three regions have the same height.
 
-The dimensions can be set before `/run/initialize` through `/sourceLab/geometry/*`:
+The dimensions and phantom material can be set before `/run/initialize` through `/sourceLab/geometry/*`:
 
 ```tcl
 /sourceLab/geometry/worldSize 30 cm
 /sourceLab/geometry/phantomHeight 5 cm
 /sourceLab/geometry/sourceRadius 2.375 mm
 /sourceLab/geometry/sourceShellThickness 0.8 mm
+/sourceLab/geometry/phantomMaterial G4_WATER
 ```
 
-Dose, energy deposit, and charged track length are scored in five contiguous water annuli. Regions 0, 2, and 4 are 0.07 mm thick: region 0 starts immediately outside the steel, and regions 2 and 4 are centered 10 mm and 30 mm outside the steel, respectively. Regions 1 and 3 fill the gaps. All have the phantom height. Region 4 ends at the phantom's outer radius and borders the air world. The radius is derived from the source radius and wall thickness; `/sourceLab/geometry/phantomRadius` has been removed. Initialization rejects a phantom that does not fit inside the world.
+The material choices are `G4_WATER` (the default, 1 g/cm3) and `G4_TISSUE_SOFT_ICRP` (1.03 g/cm3). The command applies to all five annuli and is available only before initialization; use separate runs for water and tissue. `run-water-annulus.mac` and `run-tissue-annulus.mac` select the materials for the common `run-annulus.mac` setup. The `/sourceLab/output/geometry` value is a user-provided label, not a material selector; update that label when adapting an existing run macro.
 
-The source, shell, and water annuli are separate sibling volumes in the air world. Each primitive dose scorer uses its annulus's water mass. The existing `phantom` event ntuple and `run` summary contain whole-water scores, with dose calculated as total water energy deposit divided by total water mass. At run end, the mass-weighted sum of the five region doses and the accumulated whole-water dose are checked against total water energy divided by total mass (relative tolerance `1e-10`, with exact agreement for zero); a mismatch is fatal. Both calculations use the same region hits, so this checks scoring normalization and aggregation rather than independently validating the geometry or physics.
+Dose, energy deposit, and charged track length are scored in five contiguous phantom annuli. Regions 0, 2, and 4 are 0.07 mm thick: region 0 starts immediately outside the steel, and regions 2 and 4 are centered 10 mm and 30 mm outside the steel, respectively. Regions 1 and 3 fill the gaps. All have the phantom height. Region 4 ends at the phantom's outer radius and borders the air world. The radius is derived from the source radius and wall thickness; `/sourceLab/geometry/phantomRadius` has been removed. Initialization rejects a phantom that does not fit inside the world.
 
-The `water_regions` ntuple contains five rows per event, with `EventId`, `ThreadId`, `Region` (copy numbers 0–4), `Dose`, `Edep`, and `TrackL`. The `water_region_run` ntuple has five rows per run in sequential mode or per worker in MT mode, with `ThreadId`, `Region`, `InnerRadiusMm`, `OuterRadiusMm`, `MassG`, `Dose`, `Edep`, and `TrackL`. Dose, energy, and track-length columns use Geant4 internal units, as in the existing ntuples. Sum each region's run scores across workers; region masses and radii are repeated, not additive. `/sourceLab/output/depth` remains metadata and defaults to `0 cm`.
+The source, shell, and phantom annuli are separate sibling volumes in the air world. Each primitive dose scorer uses its annulus's mass for the selected material. The existing `phantom` event ntuple and `run` summary contain whole-phantom scores, with dose calculated as total phantom energy deposit divided by total phantom mass. At run end, the mass-weighted sum of the five region doses and the accumulated whole-phantom dose are checked against total phantom energy divided by total mass (relative tolerance `1e-10`, with exact agreement for zero); a mismatch is fatal. Both calculations use the same region hits, so this checks scoring normalization and aggregation rather than independently validating the geometry or physics.
+
+The `water_regions` ntuple contains five rows per event, with `EventId`, `ThreadId`, `Region` (copy numbers 0–4), `Dose`, `Edep`, and `TrackL`. The `water_region_run` ntuple has five rows per run in sequential mode or per worker in MT mode, with `ThreadId`, `Region`, `InnerRadiusMm`, `OuterRadiusMm`, `MassG`, `Dose`, `Edep`, and `TrackL`. These legacy tree names are retained for both materials. Dose, energy, and track-length columns use Geant4 internal units, as in the existing ntuples. Sum each region's run scores across workers; region masses and radii are repeated, not additive. `/sourceLab/output/depth` remains metadata and defaults to `0 cm`.
 
 The default runs and `run-decay-cs137.mac` sample Cs-137 ions uniformly throughout the inner source cylinder. The GPS radius and half-height in `position-cs137-cylinder.mac` match the default geometry dimensions. If the source radius or phantom height is changed, update the GPS radius or half-height to match.
 
@@ -166,13 +178,13 @@ Each run writes its ROOT file under `output/<UTC-timestamp>/` in the sourceLab p
 
 NumPy and Uproot are in the lab environment; full ROOT is not required. The paths below are illustrative: replace them with the reported `Output path:` from your run.
 
-Generate a text report with run metadata and pooled dose statistics for the whole phantom and each water region:
+Generate a text report with run metadata and pooled dose statistics for the whole phantom and each region:
 
 ```bash
-./scripts/run-micromamba.sh exec python analysis/summarize_water.py output/2026-01-01T120000Z/sourceLab-run-simple.root
+./scripts/run-micromamba.sh exec python analysis/summarize_phantom.py output/2026-01-01T120000Z/sourceLab-run-simple.root
 ```
 
-The `exec` mode creates or verifies the environment like `run`, then executes the given command without rebuilding the application. By default, the report is saved beside the ROOT file as `<filename>-report.txt` and printed to the terminal. Use `--output /path/to/report.txt` to choose another location. Existing reports are not overwritten. The report reads the small metadata and statistics trees, not the per-event trees, so it can also handle large runs. It combines worker counts, means and M2 correctly, includes zero-score events, and reports total dose, per-event mean, sample standard deviation and standard error in Gy. Uncertainties are statistical only. It supports the current five-region geometry and the older six-region geometry. Files without `score_statistics` cannot be summarized; files without random-state metadata are marked accordingly.
+The `exec` mode creates or verifies the environment like `run`, then executes the given command without rebuilding the application. By default, the report is saved beside the ROOT file as `<filename>-report.txt` and printed to the terminal. Use `--output /path/to/report.txt` to choose another location. Existing reports are not overwritten. `summarize_phantom.py` supports both phantom materials; `summarize_water.py` remains a compatibility entry point. The report reads the small metadata and statistics trees, not the per-event trees, so it can also handle large runs. It combines worker counts, means and M2 correctly, includes zero-score events, and reports total dose, per-event mean, sample standard deviation and standard error in Gy. Uncertainties are statistical only. It supports the current five-region geometry and the older six-region geometry. Files without `score_statistics` cannot be summarized; files without random-state or material metadata are marked accordingly.
 
 For direct access to the data, this smaller example inspects the phantom tree:
 
@@ -208,12 +220,13 @@ The `runinfo` ntuple uses the standardized schema:
 - `Geant4Version` (version used to build the application)
 - `RandomEngine` (engine used by the scoring thread)
 - `RandomState` (Geant4 serialized engine state at the beginning of that run or worker run)
+- `PhantomMaterial` (the selected Geant4 material name; absent in legacy water files)
 
 Policy: `runinfo` stores one row per run in sequential mode, and one row per worker in MT mode. Use `ThreadId` to identify worker provenance.
 
-Each `score_statistics` row describes one quantity (`Dose`, `Edep`, or charged `TrackL`) per worker, or the whole run in sequential mode. `Region` is -1 for whole water and 0–4 for the five annuli; columns are `ThreadId`, `Region`, `Quantity`, `Events`, `Mean`, `M2`, `StdDev`, and `StdErr`. Every event is included, including zero scores. `M2` is the sum of squared deviations from the mean; `StdDev = sqrt(M2/(Events-1))` is the sample standard deviation and `StdErr = StdDev/sqrt(Events)` estimates the uncertainty of the per-event mean for independent events. For fewer than two events, `StdDev` and `StdErr` are NaN. Scores use Geant4 internal units; `M2` uses their squares.
+Each `score_statistics` row describes one quantity (`Dose`, `Edep`, or charged `TrackL`) per worker, or the whole run in sequential mode. `Region` is -1 for the whole phantom and 0–4 for the five annuli; columns are `ThreadId`, `Region`, `Quantity`, `Events`, `Mean`, `M2`, `StdDev`, and `StdErr`. Every event is included, including zero scores. `M2` is the sum of squared deviations from the mean; `StdDev = sqrt(M2/(Events-1))` is the sample standard deviation and `StdErr = StdDev/sqrt(Events)` estimates the uncertainty of the per-event mean for independent events. For fewer than two events, `StdDev` and `StdErr` are NaN. Scores use Geant4 internal units; `M2` uses their squares.
 
-For MT output, do not average worker standard deviations or errors. For each region and quantity, combine worker counts, means, and M2 using `N = sum(n_i)`, `mean = sum(n_i*mean_i)/N`, and `M2 = sum(M2_i + n_i*(mean_i-mean)^2)`, ignoring empty workers. Then calculate the run-level standard deviation and standard error as above. The console also prints the combined statistics. Whole-water event scores are summed before computing statistics, preserving correlations between regions. These are statistical uncertainties only, not systematic uncertainties or validation of the physics model. `RandomState` records Geant4's serialized engine state at the beginning of each sequential run or MT worker run, providing random-state provenance. It is not a per-event seed log, so it does not by itself guarantee exact replay of a multithreaded run. Run configuration, Geant4/CLHEP versions, thread count, and event scheduling can also affect reproducibility.
+For MT output, do not average worker standard deviations or errors. For each region and quantity, combine worker counts, means, and M2 using `N = sum(n_i)`, `mean = sum(n_i*mean_i)/N`, and `M2 = sum(M2_i + n_i*(mean_i-mean)^2)`, ignoring empty workers. Then calculate the run-level standard deviation and standard error as above. The console also prints the combined statistics. Whole-phantom event scores are summed before computing statistics, preserving correlations between regions. These are statistical uncertainties only, not systematic uncertainties or validation of the physics model. `RandomState` records Geant4's serialized engine state at the beginning of each sequential run or MT worker run, providing random-state provenance. It is not a per-event seed log, so it does not by itself guarantee exact replay of a multithreaded run. Run configuration, Geant4/CLHEP versions, thread count, and event scheduling can also affect reproducibility.
 
 At end-of-run, each worker writes its data for merging, and the master finalizes the output. A concise "Run complete" summary line is printed with events, output file, and key metadata.
 

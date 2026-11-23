@@ -3,6 +3,7 @@
 #include "SourceLabDetectorConstruction.hh"
 
 #include "G4UIcmdWithADoubleAndUnit.hh"
+#include "G4UIcmdWithAString.hh"
 #include "G4UIdirectory.hh"
 
 namespace SourceLab
@@ -22,7 +23,7 @@ SourceLabDetectorMessenger::SourceLabDetectorMessenger(SourceLabDetectorConstruc
   fSetWorldSizeCmd->SetDefaultUnit("cm");
 
   fSetPhantomHeightCmd = new G4UIcmdWithADoubleAndUnit("/sourceLab/geometry/phantomHeight", this);
-  fSetPhantomHeightCmd->SetGuidance("Set the water phantom height");
+  fSetPhantomHeightCmd->SetGuidance("Set the phantom height");
   fSetPhantomHeightCmd->SetParameterName("height", false);
   fSetPhantomHeightCmd->SetDefaultUnit("cm");
 
@@ -37,6 +38,12 @@ SourceLabDetectorMessenger::SourceLabDetectorMessenger(SourceLabDetectorConstruc
   fSetSourceShellThicknessCmd->SetParameterName("thickness", false);
   fSetSourceShellThicknessCmd->SetDefaultUnit("mm");
 
+  fSetPhantomMaterialCmd = new G4UIcmdWithAString("/sourceLab/geometry/phantomMaterial", this);
+  fSetPhantomMaterialCmd->SetGuidance("Select the phantom material before initialization.");
+  fSetPhantomMaterialCmd->SetParameterName("material", false);
+  fSetPhantomMaterialCmd->SetCandidates("G4_WATER G4_TISSUE_SOFT_ICRP");
+  fSetPhantomMaterialCmd->AvailableForStates(G4State_PreInit);
+
   fUpdateCmd = new G4UIcommand("/sourceLab/update", this);
   fUpdateCmd->SetGuidance("Update geometry values. Apply this before /run/initialize.");
 
@@ -50,6 +57,7 @@ SourceLabDetectorMessenger::~SourceLabDetectorMessenger()
   delete fSetPhantomHeightCmd;
   delete fSetSourceRadiusCmd;
   delete fSetSourceShellThicknessCmd;
+  delete fSetPhantomMaterialCmd;
   delete fUpdateCmd;
   delete fPrintCmd;
 }
@@ -67,6 +75,9 @@ void SourceLabDetectorMessenger::SetNewValue(G4UIcommand* command, G4String newV
   }
   else if (command == fSetSourceShellThicknessCmd) {
     fDetector->SetSourceShellThickness(fSetSourceShellThicknessCmd->GetNewDoubleValue(newValue));
+  }
+  else if (command == fSetPhantomMaterialCmd) {
+    fDetector->SetPhantomMaterial(newValue);
   }
   else if (command == fUpdateCmd) {
     G4cout << "sourceLab configuration updated; apply before /run/initialize." << G4endl;
@@ -90,6 +101,9 @@ G4String SourceLabDetectorMessenger::GetCurrentValue(G4UIcommand* command)
   }
   if (command == fSetSourceShellThicknessCmd) {
     return G4UIcommand::ConvertToString(config.sourceShellThickness, "mm");
+  }
+  if (command == fSetPhantomMaterialCmd) {
+    return config.phantomMaterial;
   }
   return "";
 }

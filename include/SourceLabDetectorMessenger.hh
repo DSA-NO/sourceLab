@@ -4,6 +4,7 @@
 #include "G4UImessenger.hh"
 
 class G4UIcmdWithADoubleAndUnit;
+class G4UIcmdWithAString;
 class G4UIcommand;
 
 namespace SourceLab
@@ -27,6 +28,7 @@ class SourceLabDetectorMessenger : public G4UImessenger
     G4UIcmdWithADoubleAndUnit* fSetPhantomHeightCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSourceRadiusCmd = nullptr;
     G4UIcmdWithADoubleAndUnit* fSetSourceShellThicknessCmd = nullptr;
+    G4UIcmdWithAString* fSetPhantomMaterialCmd = nullptr;
 
     G4UIcommand* fUpdateCmd = nullptr;
     G4UIcommand* fPrintCmd = nullptr;

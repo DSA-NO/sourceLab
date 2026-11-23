@@ -28,6 +28,7 @@ struct DetectorConfig
   G4double phantomHeight = 5.0 * cm;
   G4double sourceRadius = 2.375 * mm;
   G4double sourceShellThickness = 0.8 * mm;
+  G4String phantomMaterial = "G4_WATER";
 };
 
 class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
@@ -46,6 +47,7 @@ class SourceLabDetectorConstruction : public G4VUserDetectorConstruction
     void SetPhantomHeight(G4double height);
     void SetSourceRadius(G4double radius);
     void SetSourceShellThickness(G4double thickness);
+    void SetPhantomMaterial(const G4String& material);
 
     G4double GetWorldSize() const;
     const std::array<WaterRegion, kWaterRegionCount>& GetWaterRegions() const;

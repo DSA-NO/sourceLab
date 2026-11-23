@@ -46,6 +46,7 @@ void SourceLabDetectorConstruction::DefineMaterials()
   auto* nist = G4NistManager::Instance();
   nist->FindOrBuildMaterial("G4_AIR");
   nist->FindOrBuildMaterial("G4_WATER");
+  nist->FindOrBuildMaterial("G4_TISSUE_SOFT_ICRP");
   nist->FindOrBuildMaterial("G4_STAINLESS-STEEL");
 
   auto* cesium137 = new G4Isotope("Cs137", 55, 137, 136.90708923 * g / mole);
@@ -119,6 +120,18 @@ void SourceLabDetectorConstruction::SetSourceShellThickness(G4double thickness)
   }
 }
 
+void SourceLabDetectorConstruction::SetPhantomMaterial(const G4String& material)
+{
+  if (material != "G4_WATER" && material != "G4_TISSUE_SOFT_ICRP") {
+    G4ExceptionDescription message;
+    message << "Unsupported phantom material '" << material << "'.";
+    G4Exception("SourceLabDetectorConstruction::SetPhantomMaterial", "SourceLabGeometry002",
+                FatalException, message);
+    return;
+  }
+  fConfig.phantomMaterial = material;
+}
+
 G4double SourceLabDetectorConstruction::GetWorldSize() const
 {
   return fConfig.worldSize;
@@ -137,6 +150,7 @@ void SourceLabDetectorConstruction::PrintConfig() const
          << (fConfig.sourceRadius + fConfig.sourceShellThickness + kOuterLayerDepth + kLayerThickness / 2.) / cm
          << " cm" << G4endl;
   G4cout << "  phantomHeight = " << fConfig.phantomHeight / cm << " cm" << G4endl;
+  G4cout << "  phantomMaterial = " << fConfig.phantomMaterial << G4endl;
   G4cout << "  sourceRadius = " << fConfig.sourceRadius / mm << " mm" << G4endl;
   G4cout << "  sourceHeight = " << fConfig.phantomHeight / cm << " cm" << G4endl;
   G4cout << "  sourceShellThickness = " << fConfig.sourceShellThickness / mm << " mm" << G4endl;
@@ -145,7 +159,21 @@ void SourceLabDetectorConstruction::PrintConfig() const
 G4VPhysicalVolume* SourceLabDetectorConstruction::DefineVolumes()
 {
   auto* worldMat = G4Material::GetMaterial("G4_AIR");
-  auto* phantomMat = G4Material::GetMaterial("G4_WATER");
+  if (fConfig.phantomMaterial != "G4_WATER" && fConfig.phantomMaterial != "G4_TISSUE_SOFT_ICRP") {
+    G4ExceptionDescription message;
+    message << "Unsupported phantom material '" << fConfig.phantomMaterial << "'.";
+    G4Exception("SourceLabDetectorConstruction::DefineVolumes", "SourceLabGeometry002",
+                FatalException, message);
+    return nullptr;
+  }
+  auto* phantomMat = G4Material::GetMaterial(fConfig.phantomMaterial, false);
+  if (!phantomMat) {
+    G4ExceptionDescription message;
+    message << "Phantom material '" << fConfig.phantomMaterial << "' is unavailable.";
+    G4Exception("SourceLabDetectorConstruction::DefineVolumes", "SourceLabGeometry003",
+                FatalException, message);
+    return nullptr;
+  }
   auto* sourceMat = G4Material::GetMaterial("Cs137Metal");
   auto* shellMat = G4Material::GetMaterial("G4_STAINLESS-STEEL");
 

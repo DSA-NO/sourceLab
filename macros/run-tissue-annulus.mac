@@ -1,0 +1,6 @@
+# Cs-137 run in an ICRP soft-tissue annulus.
+/control/macroPath .:macros:../macros
+/sourceLab/geometry/phantomMaterial G4_TISSUE_SOFT_ICRP
+/sourceLab/output/tag run-tissue
+/sourceLab/output/geometry tissue-annulus
+/control/execute run-annulus.mac

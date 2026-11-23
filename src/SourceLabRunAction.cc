@@ -96,10 +96,10 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   auto* analysisManager = G4AnalysisManager::Instance();
   analysisManager->SetVerboseLevel(1);
   analysisManager->SetNtupleMerging(true);
-  analysisManager->CreateH1("Dose", "Dose in water phantom", 100, 0., 10 * gray);
-  analysisManager->CreateH1("Edep", "Energy deposit in water phantom", 100, 0., 10 * MeV);
-  analysisManager->CreateH1("TrackL", "Track length in water phantom", 100, 0., 10 * cm);
-  fPhantomNtupleId = analysisManager->CreateNtuple("phantom", "Water phantom dose, energy deposit, and track length");
+  analysisManager->CreateH1("Dose", "Dose in phantom", 100, 0., 10 * gray);
+  analysisManager->CreateH1("Edep", "Energy deposit in phantom", 100, 0., 10 * MeV);
+  analysisManager->CreateH1("TrackL", "Track length in phantom", 100, 0., 10 * cm);
+  fPhantomNtupleId = analysisManager->CreateNtuple("phantom", "Phantom dose, energy deposit, and track length");
   analysisManager->CreateNtupleDColumn("Dose");
   analysisManager->CreateNtupleDColumn("Edep");
   analysisManager->CreateNtupleDColumn("TrackL");
@@ -126,9 +126,10 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->CreateNtupleSColumn("Geant4Version");
   analysisManager->CreateNtupleSColumn("RandomEngine");
   analysisManager->CreateNtupleSColumn("RandomState");
+  analysisManager->CreateNtupleSColumn("PhantomMaterial");
   analysisManager->FinishNtuple(fRunInfoNtupleId);
 
-  fWaterRegionNtupleId = analysisManager->CreateNtuple("water_regions", "Per-event water region scores");
+  fWaterRegionNtupleId = analysisManager->CreateNtuple("water_regions", "Per-event phantom region scores");
   analysisManager->CreateNtupleIColumn("EventId");
   analysisManager->CreateNtupleIColumn("ThreadId");
   analysisManager->CreateNtupleIColumn("Region");
@@ -137,7 +138,7 @@ SourceLabRunAction::SourceLabRunAction(SourceLabDetectorConstruction* detectorCo
   analysisManager->CreateNtupleDColumn("TrackL");
   analysisManager->FinishNtuple(fWaterRegionNtupleId);
 
-  fWaterRegionRunNtupleId = analysisManager->CreateNtuple("water_region_run", "Run-level water region scores");
+  fWaterRegionRunNtupleId = analysisManager->CreateNtuple("water_region_run", "Run-level phantom region scores");
   analysisManager->CreateNtupleIColumn("ThreadId");
   analysisManager->CreateNtupleIColumn("Region");
   analysisManager->CreateNtupleDColumn("InnerRadiusMm");
@@ -327,7 +328,7 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     G4ExceptionDescription msg;
     msg << "Mass-weighted region dose " << weightedDose / gray
         << " Gy or accumulated phantom dose " << runDose / gray
-        << " Gy does not match total energy / water mass " << doseFromEnergy / gray << " Gy.";
+        << " Gy does not match total energy / phantom mass " << doseFromEnergy / gray << " Gy.";
     G4Exception("SourceLabRunAction::EndOfRunAction", "SourceLabScoring004", FatalException, msg);
     return;
   }
@@ -352,6 +353,7 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 9, G4Version);
     analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 10, G4Random::getTheEngine()->name());
     analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 11, run->GetRandomNumberStatus());
+    analysisManager->FillNtupleSColumn(fRunInfoNtupleId, 12, fDetectorConstruction->GetConfig().phantomMaterial);
     analysisManager->AddNtupleRow(fRunInfoNtupleId);
   }
   if (writeRunRow) {
@@ -367,6 +369,7 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     G4cout << "Run complete: events=" << run->GetNumberOfEvent()
            << ", file=" << BuildOutputFileName()
            << ", source=" << fOutputSource
+           << ", material=" << fDetectorConstruction->GetConfig().phantomMaterial
            << ", geometry=" << fOutputGeometry
            << ", region=" << fOutputRegion
            << ", depth_cm=" << fOutputDepthCm
@@ -377,17 +380,17 @@ void SourceLabRunAction::EndOfRunAction(const G4Run* run)
     G4cout << "Run summary: " << run->GetNumberOfEvent() << " events" << G4endl;
     G4cout << "Total dose in phantom: " << ToScientific(GetRunDose(), gray, "Gy") << G4endl;
     G4cout << "Mass-weighted region dose: " << ToScientific(weightedDose, gray, "Gy")
-           << " (consistent with total energy / water mass)" << G4endl;
+           << " (consistent with total energy / phantom mass)" << G4endl;
     G4cout << "Total energy deposit in phantom: " << ToScientific(GetRunEnergyDeposit(), eV, "eV") << G4endl;
     G4cout << "Total charged track length in phantom: " << ToScientific(GetRunTrackLength(), mm, "mm") << G4endl;
     fScoreStatistics.Print("phantom");
     for (std::size_t i = 0; i < kWaterRegionCount; ++i) {
-      G4cout << "Water region " << i << " [" << regions[i].innerRadius / mm << ", "
+      G4cout << "Phantom region " << i << " [" << regions[i].innerRadius / mm << ", "
              << regions[i].outerRadius / mm << "] mm: dose="
              << ToScientific(fRegionDoses[i].GetValue(), gray, "Gy")
              << ", edep=" << ToScientific(fRegionEnergyDeposits[i].GetValue(), eV, "eV")
              << G4endl;
-      fRegionStatistics[i].Print("water region " + std::to_string(i));
+      fRegionStatistics[i].Print("phantom region " + std::to_string(i));
     }
   }
 }
