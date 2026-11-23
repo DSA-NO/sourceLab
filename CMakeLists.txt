@@ -38,20 +38,24 @@ if(BUILD_TESTING)
       -P "${PROJECT_SOURCE_DIR}/tests/cs137_source_distribution.cmake")
 endif()
 
-set(SOURCE_LAB_MACROS
+set(SOURCELAB_REQUIRED_MACROS
   gui.mac
   init_vis.mac
+  vis.mac
   run.mac
+  source-cs137.mac
+  position-cs137-cylinder.mac
 )
 
-foreach(_macro ${SOURCE_LAB_MACROS})
-  if(EXISTS "${PROJECT_SOURCE_DIR}/macros/${_macro}")
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/macros/${_macro}
-      ${PROJECT_BINARY_DIR}/${_macro}
-      COPYONLY
-    )
+foreach(_macro ${SOURCELAB_REQUIRED_MACROS})
+  if(NOT EXISTS "${PROJECT_SOURCE_DIR}/macros/${_macro}")
+    message(FATAL_ERROR "Missing required macro: macros/${_macro}")
   endif()
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/macros/${_macro}
+    ${PROJECT_BINARY_DIR}/${_macro}
+    COPYONLY
+  )
 endforeach()
 
 install(TARGETS sourceLab RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

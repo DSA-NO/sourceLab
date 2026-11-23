@@ -145,16 +145,15 @@ sourceLab exposes output metadata commands under `/sourceLab/output/`.
 Set metadata in a macro before `/run/beamOn`:
 
 ```tcl
-/sourceLab/output/tag co60-cylinder
-/sourceLab/output/source co60
+/sourceLab/output/tag cs137-cylinder
+/sourceLab/output/source cs137
 /sourceLab/output/geometry water-annulus
 /sourceLab/output/region phantom
 /sourceLab/output/depth 0 cm
 ```
 
-Allowed source labels are: `unspecified`, `co60`, `cs137`, `6mv`, `10mv`.
-Legacy aliases like `linac-6mv`, `linac-10mv`, `cs-137`, and `cobalt-60` are accepted and canonicalized.
-The MV labels are retained for metadata compatibility; sourceLab does not provide MV source preset macros.
+Allowed source labels are: `unspecified`, `cs137`.
+Legacy alias `cs-137` is accepted and canonicalized.
 
 Output file naming:
 
@@ -260,8 +259,7 @@ Source composition contract:
 
 Available source presets:
 
-- `source-co60.mac`
-- `source-cs137.mac` (default; Cs-137 decays via Ba-137m)
+- `source-cs137.mac` (Cs-137 decays via Ba-137m)
 - `source.mac` (alias for `source-cs137.mac`)
 
 Small decay example run macro:

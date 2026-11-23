@@ -45,16 +45,10 @@ bool TryCanonicalSource(const G4String& source, G4String& canonical)
     const char* canonical;
   };
 
-  static constexpr std::array<Alias, 9> kAliases{{
+  static constexpr std::array<Alias, 3> kAliases{{
     {"unspecified", "unspecified"},
-    {"co60", "co60"},
-    {"cobalt-60", "co60"},
     {"cs137", "cs137"},
     {"cs-137", "cs137"},
-    {"6mv", "6mv"},
-    {"linac-6mv", "6mv"},
-    {"10mv", "10mv"},
-    {"linac-10mv", "10mv"},
   }};
 
   const auto normalized = ToLower(source);
@@ -67,7 +61,7 @@ bool TryCanonicalSource(const G4String& source, G4String& canonical)
   return false;
 }
 
-constexpr const char* kSourceCandidates = "unspecified co60 cs137 6mv 10mv";
+constexpr const char* kSourceCandidates = "unspecified cs137";
 
 // Scientific notation avoids G4BestUnit rounding tiny-but-real values down to a displayed "0".
 G4String ToScientific(G4double value, G4double unit, const G4String& unitLabel)
@@ -170,7 +164,7 @@ void SourceLabRunAction::ConfigureCommands()
   auto& sourceCmd = fMessenger->DeclareMethod("source", &SourceLabRunAction::SetOutputSource,
                                                "Set source metadata stored in runinfo ntuple.");
   sourceCmd.SetGuidance("Set source metadata stored in runinfo ntuple.");
-  sourceCmd.SetGuidance("Allowed values: unspecified, co60, cs137, 6mv, 10mv.");
+  sourceCmd.SetGuidance("Allowed values: unspecified, cs137.");
   sourceCmd.SetParameterName("source", false);
   sourceCmd.SetCandidates(kSourceCandidates);
   sourceCmd.SetStates(G4State_PreInit, G4State_Idle);
@@ -222,7 +216,7 @@ void SourceLabRunAction::SetOutputSource(const G4String& source)
   if (!TryCanonicalSource(source, canonical)) {
     G4ExceptionDescription msg;
     msg << "Invalid source metadata '" << source
-        << "'. Allowed values: unspecified, co60, cs137, 6mv, 10mv.";
+        << "'. Allowed values: unspecified, cs137.";
     G4Exception("SourceLabRunAction::SetOutputSource", "SourceLabOutput003", FatalException, msg);
     return;
   }
