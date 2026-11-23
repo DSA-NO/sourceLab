@@ -48,9 +48,37 @@ runner="$tmp/project/scripts/run-micromamba.sh"
 bash "$runner" setup
 bash "$runner" check
 
+mkdir -p "$tmp/home/.local/bin"
+ln -s "$tmp/micromamba" "$tmp/home/.local/bin/micromamba"
+HOME="$tmp/home" PATH=/usr/bin:/bin MICROMAMBA_BIN= \
+CPATH=/foreign/include PYTHONPATH=/foreign LAB_OUTPUT_DIR=/requested/output \
+  bash "$runner" exec bash -ec '
+    [[ ! -v CPATH && ! -v PYTHONPATH && "$PYTHONNOUSERSITE" == 1 ]]
+    [[ "$LAB_OUTPUT_DIR" == /requested/output && "$1" == "argument with spaces" ]]
+  ' _ "argument with spaces"
+
+if bash "$runner" exec > "$tmp/output" 2>&1; then
+  echo "Expected exec without a command to be rejected." >&2
+  exit 1
+fi
+grep -q 'exec requires a command' "$tmp/output"
+
+if bash "$runner" exec bash -c 'exit 37'; then
+  echo "Expected exec to propagate a failing command." >&2
+  exit 1
+else
+  status=$?
+  [[ "$status" == 37 ]]
+fi
+
 printf 'https://example.invalid/extra.conda#abcd\n' >> "$tmp/state/installed"
 if bash "$runner" check > "$tmp/output" 2>&1; then
   echo "Expected an extra installed package to be rejected." >&2
+  exit 1
+fi
+grep -q 'does not match environment-linux-64.lock' "$tmp/output"
+if bash "$runner" exec true > "$tmp/output" 2>&1; then
+  echo "Expected exec to reject an environment that does not match the lock." >&2
   exit 1
 fi
 grep -q 'does not match environment-linux-64.lock' "$tmp/output"

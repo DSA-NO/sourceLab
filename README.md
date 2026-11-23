@@ -64,7 +64,7 @@ rmdir "$tmp"
 
 Run these commands in a shell with `set -e` and `set -o pipefail` so a failed solve or export does not replace the lock. Lock verification checks conda package records, not changes made by pip or manual edits inside an environment.
 
-Builds and batch runs use `scripts/run-isolated.sh` to clear inherited compiler, library, Geant4 dataset, ROOT, CMake and Python paths before activating the lab environment. Operating-system libraries are still required. An interactive shell or a direct `micromamba run` can reintroduce settings from the user's shell.
+Builds, runs and `exec` commands use `scripts/run-isolated.sh` to clear inherited compiler, library, Geant4 dataset, ROOT, CMake and Python paths before activating the lab environment. Operating-system libraries are still required. An interactive shell or a direct `micromamba run` can reintroduce settings from the user's shell.
 
 If you want an interactive shell inside the environment:
 
@@ -161,15 +161,24 @@ Output file naming:
 - default tag (unset): `sourceLab-default.root`
 - custom tag: `sourceLab-<tag>.root`
 
-Each run writes its ROOT file under `output/<UTC-timestamp>/` in the sourceLab project directory. A numeric suffix is added if the timestamp already exists, so repeated or concurrent runs do not overwrite each other. The full output path is printed as `Output path:`. Set `LAB_OUTPUT_DIR` to use a different parent directory; a relative path is resolved from the directory where the application starts, before it switches to the macro directory. If the build's source directory no longer exists, the default is `output/` in the startup directory. The project output folder is Git-ignored; old results are not automatically deleted.
+Each run writes its ROOT file under `output/<UTC-timestamp>/` in the sourceLab project directory. A numeric suffix is added if the timestamp already exists, so repeated or concurrent runs do not overwrite each other. The full output path is printed as `Output path:`. Set `LAB_OUTPUT_DIR` to use a different parent directory; a relative path is resolved from the directory where the application starts, before it switches to the macro directory. If the build's source directory no longer exists, the default is `output/` in the startup directory. The `output/` folder is included in the repository, but generated results are Git-ignored and are not automatically deleted.
 
 ### Read output with Uproot
 
-NumPy and Uproot are in the lab environment; full ROOT is not required. Replace the filename with the reported `Output path:`:
+NumPy and Uproot are in the lab environment; full ROOT is not required. The paths below are illustrative: replace them with the reported `Output path:` from your run.
+
+Generate a text report with run metadata and pooled dose statistics for the whole phantom and each water region:
 
 ```bash
-./scripts/run-micromamba.sh setup
-./scripts/run-isolated.sh micromamba geant4-sourceLab python - /path/to/output.root <<'PY'
+./scripts/run-micromamba.sh exec python analysis/summarize_water.py output/2026-01-01T120000Z/sourceLab-run-simple.root
+```
+
+The `exec` mode creates or verifies the environment like `run`, then executes the given command without rebuilding the application. By default, the report is saved beside the ROOT file as `<filename>-report.txt` and printed to the terminal. Use `--output /path/to/report.txt` to choose another location. Existing reports are not overwritten. The report reads the small metadata and statistics trees, not the per-event trees, so it can also handle large runs. It combines worker counts, means and M2 correctly, includes zero-score events, and reports total dose, per-event mean, sample standard deviation and standard error in Gy. Uncertainties are statistical only. It supports the current five-region geometry and the older six-region geometry. Files without `score_statistics` cannot be summarized; files without random-state metadata are marked accordingly.
+
+For direct access to the data, this smaller example inspects the phantom tree:
+
+```bash
+./scripts/run-micromamba.sh exec python - output/2026-01-01T120000Z/sourceLab-run-simple.root <<'PY'
 import sys
 import uproot
 

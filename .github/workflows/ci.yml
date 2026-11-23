@@ -76,3 +76,6 @@ jobs:
             exit 1
           fi
           ./scripts/run-isolated.sh micromamba geant4-sourceLab python tests/check_root_output.py "$output" phantom 100
+          ./scripts/run-micromamba.sh exec python -m unittest discover -s tests -p test_summarize_water.py -v
+          ./scripts/run-micromamba.sh exec python analysis/summarize_water.py "$output" --output "$RUNNER_TEMP/sourceLab-report.txt"
+          grep -q 'Events: 100' "$RUNNER_TEMP/sourceLab-report.txt"

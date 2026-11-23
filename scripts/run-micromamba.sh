@@ -190,17 +190,27 @@ case "$mode" in
     run_hardened_configure_build "${run_cmd}"
     ;;
 
+  exec)
+    if [[ $# -eq 0 ]]; then
+      echo "ERROR: exec requires a command." >&2
+      exit 2
+    fi
+    ensure_env
+    exec "$SCRIPT_DIR/run-isolated.sh" "$MICROMAMBA_BIN" "$ENV_NAME" "$@"
+    ;;
+
   shell)
     ensure_env
     exec "$SCRIPT_DIR/run-isolated.sh" "$MICROMAMBA_BIN" "$ENV_NAME" bash -il
     ;;
 
   *)
-    echo "Usage: $0 [setup|build|run|shell|check] [args...]"
+    echo "Usage: $0 [setup|build|run|exec|shell|check] [args...]"
     echo "Examples:"
     echo "  $0 build"
     echo "  $0 run"
     echo "  $0 run -b macros/run.mac"
+    echo "  $0 exec python analysis/summarize_water.py /path/to/output.root"
     echo "  $0 shell"
     exit 2
     ;;
